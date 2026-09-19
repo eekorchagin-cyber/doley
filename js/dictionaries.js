@@ -28,16 +28,53 @@ export function deleteFuel(data, id) {
   return { ok: true };
 }
 
+export function listNetworks(data) {
+  return data.networks;
+}
+
+export function addNetwork(data, fields) {
+  const network = {
+    id: uid('net'),
+    name: String(fields.name || '').trim() || 'Сеть',
+    logo: fields.logo || '',
+  };
+  data.networks.push(network);
+  saveData(data);
+  return network;
+}
+
+export function updateNetwork(data, id, fields) {
+  const network = data.networks.find((n) => n.id === id);
+  if (!network) return null;
+  if (fields.name != null) network.name = String(fields.name).trim() || network.name;
+  if (fields.logo != null) network.logo = fields.logo;
+  saveData(data);
+  return network;
+}
+
+export function deleteNetwork(data, id) {
+  if (data.networks.length <= 1) return { ok: false, reason: 'Нужна хотя бы одна сеть' };
+  const usedStations = data.stations.some((s) => s.networkId === id);
+  const usedFillups = data.fillups.some((f) => f.networkId === id);
+  if (usedStations || usedFillups) {
+    return { ok: false, reason: 'Сеть используется в заправках или точках' };
+  }
+  data.networks = data.networks.filter((n) => n.id !== id);
+  saveData(data);
+  return { ok: true };
+}
+
 export function listStations(data) {
   return data.stations;
 }
 
 export function addStation(data, fields) {
+  const address = String(fields.address || '').trim();
+  if (!address) return null;
   const station = {
     id: uid('station'),
-    name: String(fields.name || '').trim() || 'АЗС',
-    address: String(fields.address || '').trim(),
-    logo: fields.logo || '',
+    networkId: fields.networkId,
+    address,
   };
   data.stations.push(station);
   saveData(data);
@@ -47,17 +84,18 @@ export function addStation(data, fields) {
 export function updateStation(data, id, fields) {
   const station = data.stations.find((s) => s.id === id);
   if (!station) return null;
-  if (fields.name != null) station.name = String(fields.name).trim() || station.name;
-  if (fields.address != null) station.address = String(fields.address).trim();
-  if (fields.logo != null) station.logo = fields.logo;
+  if (fields.networkId != null) station.networkId = fields.networkId;
+  if (fields.address != null) {
+    const address = String(fields.address).trim();
+    if (address) station.address = address;
+  }
   saveData(data);
   return station;
 }
 
 export function deleteStation(data, id) {
-  if (data.stations.length <= 1) return { ok: false, reason: 'Нужна хотя бы одна сеть АЗС' };
   const used = data.fillups.some((f) => f.stationId === id);
-  if (used) return { ok: false, reason: 'Сеть используется в заправках' };
+  if (used) return { ok: false, reason: 'Заправка используется в истории' };
   data.stations = data.stations.filter((s) => s.id !== id);
   saveData(data);
   return { ok: true };
@@ -73,12 +111,14 @@ export function addFillup(data, fields) {
     consumption: Number(fields.consumption) || 0,
     fuelId: fields.fuelId,
     price: Number(fields.price) || 0,
-    stationId: fields.stationId,
+    networkId: fields.networkId || null,
+    stationId: fields.stationId || null,
     litersToFull: Number(fields.litersToFull) || 0,
     cost: Number(fields.cost) || 0,
-    litersActual: fields.litersActual != null && fields.litersActual !== ''
-      ? Number(fields.litersActual)
-      : null,
+    litersActual:
+      fields.litersActual != null && fields.litersActual !== ''
+        ? Number(fields.litersActual)
+        : null,
   };
   data.fillups.push(fillup);
   saveData(data);
@@ -95,12 +135,15 @@ export function updateFillup(data, id, fields) {
     consumption: fields.consumption != null ? Number(fields.consumption) : fillup.consumption,
     fuelId: fields.fuelId ?? fillup.fuelId,
     price: fields.price != null ? Number(fields.price) : fillup.price,
-    stationId: fields.stationId ?? fillup.stationId,
+    networkId: fields.networkId !== undefined ? fields.networkId : fillup.networkId,
+    stationId: fields.stationId !== undefined ? fields.stationId : fillup.stationId,
     litersToFull: fields.litersToFull != null ? Number(fields.litersToFull) : fillup.litersToFull,
     cost: fields.cost != null ? Number(fields.cost) : fillup.cost,
     litersActual:
       fields.litersActual === '' || fields.litersActual == null
-        ? null
+        ? fields.litersActual === ''
+          ? null
+          : fillup.litersActual
         : Number(fields.litersActual),
   });
   saveData(data);

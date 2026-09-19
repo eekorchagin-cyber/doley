@@ -1,6 +1,7 @@
 import { getActiveCar } from '../storage.js';
 import { fillupsForCar, deleteFillup, updateFillup, listFuels, listStations } from '../dictionaries.js';
 import { costPerKm, round2 } from '../calc.js';
+import { stationLabel, getStation } from '../storage.js';
 
 let root = null;
 let getData = null;
@@ -265,9 +266,12 @@ function openEdit(id) {
           .join('')}</select>
       </label>
       <label class="field"><span>Цена</span><input id="e-price" type="number" step="0.01" value="${fillup.price}"></label>
-      <label class="field"><span>АЗС</span>
+      <label class="field"><span>Заправка</span>
         <select id="e-station">${listStations(data)
-          .map((s) => `<option value="${s.id}" ${s.id === fillup.stationId ? 'selected' : ''}>${escapeHtml(s.name)}</option>`)
+          .map((s) => {
+            const label = stationLabel(data, s);
+            return `<option value="${s.id}" ${s.id === fillup.stationId ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+          })
           .join('')}</select>
       </label>
       <label class="field"><span>К заправке, л</span><input id="e-liters" type="number" step="0.01" value="${fillup.litersToFull}"></label>
@@ -295,6 +299,7 @@ function openEdit(id) {
       fuelId: modal.querySelector('#e-fuel').value,
       price: modal.querySelector('#e-price').value,
       stationId: modal.querySelector('#e-station').value,
+      networkId: getStation(d, modal.querySelector('#e-station').value)?.networkId ?? fillup.networkId,
       litersToFull: modal.querySelector('#e-liters').value,
       cost: modal.querySelector('#e-cost').value,
       litersActual: modal.querySelector('#e-actual').value,

@@ -2,6 +2,7 @@ import {
   exportJson,
   importJson,
   getActiveCar,
+  getNetwork,
 } from '../storage.js';
 import {
   addCar,
@@ -14,10 +15,14 @@ import {
   addFuel,
   updateFuel,
   deleteFuel,
+  addNetwork,
+  updateNetwork,
+  deleteNetwork,
   addStation,
   updateStation,
   deleteStation,
   listFuels,
+  listNetworks,
   listStations,
 } from '../dictionaries.js';
 
@@ -108,7 +113,7 @@ function renderDicts(data) {
   return `
     <section class="settings-block">
       <h3 class="block-title">Автомобили</h3>
-      <ul class="dict-list" id="cars-list">
+      <ul class="dict-list">
         ${listCars(data)
           .map(
             (c) => `<li class="dict-item">
@@ -150,26 +155,56 @@ function renderDicts(data) {
 
     <section class="settings-block">
       <h3 class="block-title">Сети заправок</h3>
+      <p class="hint">Только название и логотип, без адреса.</p>
       <ul class="dict-list">
-        ${listStations(data)
+        ${listNetworks(data)
           .map(
-            (s) => `<li class="dict-item">
+            (n) => `<li class="dict-item">
             <div class="dict-main">
-              ${s.logo ? `<img class="station-logo" src="${s.logo}" alt="">` : `<span class="logo-ph">⛽</span>`}
+              ${n.logo ? `<img class="station-logo" src="${n.logo}" alt="">` : `<span class="station-logo logo-empty"></span>`}
               <div>
-                <strong>${escapeHtml(s.name)}</strong>
-                <small>${escapeHtml(s.address || 'сеть АЗС')}</small>
+                <strong>${escapeHtml(n.name)}</strong>
+              </div>
+            </div>
+            <div class="dict-actions">
+              <button type="button" class="btn-icon" data-edit-net="${n.id}">✎</button>
+              <button type="button" class="btn-icon danger" data-del-net="${n.id}">×</button>
+            </div>
+          </li>`
+          )
+          .join('')}
+      </ul>
+      <button type="button" class="btn-secondary" id="add-net">+ Сеть</button>
+    </section>
+
+    <section class="settings-block">
+      <h3 class="block-title">Заправки (адреса)</h3>
+      <p class="hint">Конкретная точка: адрес и сеть, к которой она относится.</p>
+      <ul class="dict-list">
+        ${
+          listStations(data).length
+            ? listStations(data)
+                .map((s) => {
+                  const net = getNetwork(data, s.networkId);
+                  return `<li class="dict-item">
+            <div class="dict-main">
+              ${net?.logo ? `<img class="station-logo" src="${net.logo}" alt="">` : `<span class="station-logo logo-empty"></span>`}
+              <div>
+                <strong>${escapeHtml(s.address)}</strong>
+                <small>${escapeHtml(net?.name || 'сеть не указана')}</small>
               </div>
             </div>
             <div class="dict-actions">
               <button type="button" class="btn-icon" data-edit-station="${s.id}">✎</button>
               <button type="button" class="btn-icon danger" data-del-station="${s.id}">×</button>
             </div>
-          </li>`
-          )
-          .join('')}
+          </li>`;
+                })
+                .join('')
+            : `<li class="empty-state">Пока нет заправок с адресом</li>`
+        }
       </ul>
-      <button type="button" class="btn-secondary" id="add-station">+ Сеть</button>
+      <button type="button" class="btn-secondary" id="add-station">+ Заправка</button>
     </section>
 
     <div id="settings-modal" class="modal" hidden></div>
@@ -221,8 +256,7 @@ function bindMain() {
 }
 
 function bindDicts() {
-  const modal = root.querySelector('#settings-modal');
-  if (!modal) return;
+  if (!root.querySelector('#settings-modal')) return;
 
   root.querySelector('#add-car')?.addEventListener('click', () => openCarForm());
   root.querySelector('#add-fuel')?.addEventListener('click', () => {
@@ -234,6 +268,7 @@ function bindDicts() {
     notify();
     render();
   });
+  root.querySelector('#add-net')?.addEventListener('click', () => openNetworkForm());
   root.querySelector('#add-station')?.addEventListener('click', () => openStationForm());
 
   root.querySelectorAll('[data-edit-car]').forEach((btn) => {
@@ -269,6 +304,23 @@ function bindDicts() {
     btn.addEventListener('click', () => {
       const d = getData();
       const res = deleteFuel(d, btn.getAttribute('data-del-fuel'));
+      if (!res.ok) {
+        alert(res.reason);
+        return;
+      }
+      setData(d);
+      notify();
+      render();
+    });
+  });
+
+  root.querySelectorAll('[data-edit-net]').forEach((btn) => {
+    btn.addEventListener('click', () => openNetworkForm(btn.getAttribute('data-edit-net')));
+  });
+  root.querySelectorAll('[data-del-net]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const d = getData();
+      const res = deleteNetwork(d, btn.getAttribute('data-del-net'));
       if (!res.ok) {
         alert(res.reason);
         return;
@@ -357,27 +409,26 @@ function openCarForm(id) {
   };
 }
 
-function openStationForm(id) {
+function openNetworkForm(id) {
   const data = getData();
-  const station = id ? data.stations.find((s) => s.id === id) : null;
+  const network = id ? data.networks.find((n) => n.id === id) : null;
   const modal = root.querySelector('#settings-modal');
   modal.hidden = false;
   modal.innerHTML = `
     <div class="modal-card">
-      <h3>${station ? 'Сеть АЗС' : 'Новая сеть'}</h3>
-      <label class="field"><span>Название сети</span><input id="st-name" value="${escapeAttr(station?.name || '')}"></label>
-      <label class="field"><span>Адрес <em>(необяз.)</em></span><input id="st-addr" value="${escapeAttr(station?.address || '')}"></label>
-      <label class="field"><span>Логотип</span><input id="st-logo" type="file" accept="image/*"></label>
-      ${station?.logo ? `<img class="preview-img" src="${station.logo}" alt="">` : ''}
+      <h3>${network ? 'Сеть АЗС' : 'Новая сеть'}</h3>
+      <label class="field"><span>Название сети</span><input id="n-name" value="${escapeAttr(network?.name || '')}"></label>
+      <label class="field"><span>Логотип</span><input id="n-logo" type="file" accept="image/*"></label>
+      ${network?.logo ? `<img class="preview-img" src="${network.logo}" alt="">` : ''}
       <div class="modal-actions">
-        <button type="button" class="btn-secondary" id="st-cancel">Отмена</button>
-        <button type="button" class="btn-primary" id="st-save">Сохранить</button>
+        <button type="button" class="btn-secondary" id="n-cancel">Отмена</button>
+        <button type="button" class="btn-primary" id="n-save">Сохранить</button>
       </div>
     </div>
   `;
 
-  let logoData = station?.logo || '';
-  modal.querySelector('#st-logo').addEventListener('change', async (e) => {
+  let logoData = network?.logo || '';
+  modal.querySelector('#n-logo').addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     logoData = await readAsDataURL(file, 160);
@@ -387,9 +438,60 @@ function openStationForm(id) {
       const img = document.createElement('img');
       img.className = 'preview-img';
       img.src = logoData;
-      modal.querySelector('#st-logo').closest('label').after(img);
+      modal.querySelector('#n-logo').closest('label').after(img);
     }
   });
+
+  modal.querySelector('#n-cancel').onclick = () => {
+    modal.hidden = true;
+  };
+  modal.onclick = (e) => {
+    if (e.target === modal) modal.hidden = true;
+  };
+  modal.querySelector('#n-save').onclick = () => {
+    const d = getData();
+    const fields = {
+      name: modal.querySelector('#n-name').value,
+      logo: logoData,
+    };
+    if (network) updateNetwork(d, network.id, fields);
+    else addNetwork(d, fields);
+    setData(d);
+    modal.hidden = true;
+    notify();
+    render();
+  };
+}
+
+function openStationForm(id) {
+  const data = getData();
+  const station = id ? data.stations.find((s) => s.id === id) : null;
+  const modal = root.querySelector('#settings-modal');
+  modal.hidden = false;
+  modal.innerHTML = `
+    <div class="modal-card">
+      <h3>${station ? 'Заправка' : 'Новая заправка'}</h3>
+      <label class="field"><span>Сеть</span>
+        <select id="st-net">
+          ${listNetworks(data)
+            .map(
+              (n) =>
+                `<option value="${n.id}" ${
+                  n.id === (station?.networkId || data.networks[0]?.id) ? 'selected' : ''
+                }>${escapeHtml(n.name)}</option>`
+            )
+            .join('')}
+        </select>
+      </label>
+      <label class="field"><span>Адрес</span><input id="st-addr" value="${escapeAttr(
+        station?.address || ''
+      )}" placeholder="ул. Пример, 1" required></label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="st-cancel">Отмена</button>
+        <button type="button" class="btn-primary" id="st-save">Сохранить</button>
+      </div>
+    </div>
+  `;
 
   modal.querySelector('#st-cancel').onclick = () => {
     modal.hidden = true;
@@ -400,10 +502,13 @@ function openStationForm(id) {
   modal.querySelector('#st-save').onclick = () => {
     const d = getData();
     const fields = {
-      name: modal.querySelector('#st-name').value,
+      networkId: modal.querySelector('#st-net').value,
       address: modal.querySelector('#st-addr').value,
-      logo: logoData,
     };
+    if (!String(fields.address).trim()) {
+      alert('Укажите адрес заправки');
+      return;
+    }
     if (station) updateStation(d, station.id, fields);
     else addStation(d, fields);
     setData(d);

@@ -1,4 +1,4 @@
-/** SVG-бейджи сетей АЗС (локальные data URL, без внешних запросов) */
+/** SVG-бейджи сетей АЗС (локальные data URL) */
 
 function badgeLogo(label, bg, fg = '#fff') {
   const text = encodeURIComponent(label);
@@ -9,7 +9,7 @@ function badgeLogo(label, bg, fg = '#fff') {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-/** Предустановленные сети заправок (РФ) */
+/** Предустановленные сети заправок (РФ) — только название и логотип */
 export const DEFAULT_NETWORKS = [
   { name: 'Лукойл', logo: badgeLogo('ЛУК', '#e30613') },
   { name: 'Роснефть', logo: badgeLogo('РН', '#ffcc00', '#1a1a1a') },
@@ -23,12 +23,10 @@ export const DEFAULT_NETWORKS = [
   { name: 'Трасса', logo: badgeLogo('ТР', '#0ea5e9') },
 ];
 
-export function networkStations(uid) {
+export function createDefaultNetworks(uid) {
   return DEFAULT_NETWORKS.map((n) => ({
-    id: uid('station'),
+    id: uid('net'),
     name: n.name,
-    address: '',
     logo: n.logo,
-    isNetwork: true,
   }));
 }

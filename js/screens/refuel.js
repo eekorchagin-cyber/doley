@@ -1,5 +1,11 @@
 import { calcFill, computeCalibration, round2 } from '../calc.js';
-import { getActiveCar, getLastInputs, setLastInputs } from '../storage.js';
+import {
+  getActiveCar,
+  getLastInputs,
+  setLastInputs,
+  getNetwork,
+  stationsByNetwork,
+} from '../storage.js';
 import { addFillup } from '../dictionaries.js';
 import { listCars, setActiveCar } from '../cars.js';
 
@@ -30,7 +36,8 @@ function todayISO() {
 function readForm() {
   return {
     odometer: root.querySelector('#odo').value,
-    stationId: root.querySelector('#station').value,
+    networkId: root.querySelector('#network').value,
+    stationId: root.querySelector('#station').value || null,
     rangeKm: root.querySelector('#range').value,
     consumption: root.querySelector('#cons').value,
     fuelId: root.querySelector('#fuel').value,
@@ -46,22 +53,37 @@ function persistInputs() {
   setLastInputs(data, car.id, readForm());
 }
 
-function syncStationLogo() {
+function syncNetworkLogo() {
   const data = getData();
-  const id = root.querySelector('#station')?.value;
-  const station = data.stations.find((s) => s.id === id);
-  const img = root.querySelector('#station-logo');
-  const ph = root.querySelector('#station-logo-ph');
-  if (!img || !ph) return;
-  if (station?.logo) {
-    img.src = station.logo;
+  const network = getNetwork(data, root.querySelector('#network')?.value);
+  const img = root.querySelector('#network-logo');
+  if (!img) return;
+  if (network?.logo) {
+    img.src = network.logo;
     img.hidden = false;
-    ph.hidden = true;
   } else {
     img.removeAttribute('src');
     img.hidden = true;
-    ph.hidden = false;
   }
+}
+
+function refillStations(preferredId) {
+  const data = getData();
+  const networkId = root.querySelector('#network')?.value;
+  const select = root.querySelector('#station');
+  if (!select) return;
+  const list = stationsByNetwork(data, networkId);
+  select.innerHTML = list.length
+    ? list
+        .map(
+          (s) =>
+            `<option value="${s.id}" ${s.id === preferredId ? 'selected' : ''}>${escapeHtml(
+              s.address
+            )}</option>`
+        )
+        .join('')
+    : `<option value="">Нет точек — добавьте в справочнике</option>`;
+  select.disabled = list.length === 0;
 }
 
 function recalc() {
@@ -101,18 +123,35 @@ function render() {
     .filter((f) => f.carId === car.id)
     .sort((a, b) => String(b.date).localeCompare(String(a.date)) || b.odometer - a.odometer)[0];
 
+  let networkId =
+    last?.networkId ?? lastFill?.networkId ?? data.networks[0]?.id ?? '';
+  if (last?.stationId) {
+    const st = data.stations.find((s) => s.id === last.stationId);
+    if (st) networkId = st.networkId;
+  } else if (lastFill?.stationId) {
+    const st = data.stations.find((s) => s.id === lastFill.stationId);
+    if (st) networkId = st.networkId;
+  }
+
+  const stationId =
+    last?.stationId ??
+    lastFill?.stationId ??
+    stationsByNetwork(data, networkId)[0]?.id ??
+    '';
+
   const defaults = {
     odometer: last?.odometer ?? lastFill?.odometer ?? '',
-    stationId: last?.stationId ?? lastFill?.stationId ?? data.stations[0]?.id ?? '',
+    networkId,
+    stationId,
     rangeKm: last?.rangeKm ?? '',
     consumption: last?.consumption ?? lastFill?.consumption ?? '9.5',
     fuelId: last?.fuelId ?? lastFill?.fuelId ?? data.fuels[0]?.id ?? '',
     price: last?.price ?? lastFill?.price ?? '',
     date: last?.date && last.date === todayISO() ? last.date : todayISO(),
-    litersActual: '',
   };
 
-  const selectedStation = data.stations.find((s) => s.id === defaults.stationId) || data.stations[0];
+  const selectedNetwork = getNetwork(data, defaults.networkId) || data.networks[0];
+  const networkStations = stationsByNetwork(data, selectedNetwork?.id);
 
   root.innerHTML = `
     <header class="screen-header">
@@ -154,25 +193,38 @@ function render() {
       <label class="field">
         <span>Сеть АЗС</span>
         <div class="station-picker">
-          <img id="station-logo" class="station-logo-lg" alt="" ${
-            selectedStation?.logo
-              ? `src="${selectedStation.logo}"`
-              : 'hidden'
+          <img id="network-logo" class="station-logo-lg" alt="" ${
+            selectedNetwork?.logo ? `src="${selectedNetwork.logo}"` : 'hidden'
           }>
-          <span id="station-logo-ph" class="station-logo-lg logo-ph" ${
-            selectedStation?.logo ? 'hidden' : ''
-          }>⛽</span>
-          <select id="station">
-            ${data.stations
+          <select id="network">
+            ${data.networks
               .map(
-                (s) =>
-                  `<option value="${s.id}" ${s.id === defaults.stationId ? 'selected' : ''}>${escapeHtml(
-                    s.name
-                  )}${s.address ? ' — ' + escapeHtml(s.address) : ''}</option>`
+                (n) =>
+                  `<option value="${n.id}" ${n.id === selectedNetwork?.id ? 'selected' : ''}>${escapeHtml(
+                    n.name
+                  )}</option>`
               )
               .join('')}
           </select>
         </div>
+      </label>
+
+      <label class="field">
+        <span>Заправка (адрес)</span>
+        <select id="station" ${networkStations.length ? '' : 'disabled'}>
+          ${
+            networkStations.length
+              ? networkStations
+                  .map(
+                    (s) =>
+                      `<option value="${s.id}" ${s.id === defaults.stationId ? 'selected' : ''}>${escapeHtml(
+                        s.address
+                      )}</option>`
+                  )
+                  .join('')
+              : `<option value="">Нет точек — добавьте в справочнике</option>`
+          }
+        </select>
       </label>
 
       <div class="field-row">
@@ -243,12 +295,17 @@ function render() {
   });
 
   const form = root.querySelector('#refuel-form');
+  root.querySelector('#network').addEventListener('change', () => {
+    refillStations();
+    syncNetworkLogo();
+    persistInputs();
+  });
+
   form.addEventListener('input', () => {
     recalc();
     persistInputs();
   });
   form.addEventListener('change', () => {
-    syncStationLogo();
     recalc();
     persistInputs();
   });
@@ -258,6 +315,10 @@ function render() {
     const d = getData();
     const active = getActiveCar(d);
     const formData = readForm();
+    if (!formData.stationId) {
+      alert('Добавьте заправку с адресом в справочнике и выберите её');
+      return;
+    }
     const calib = computeCalibration(d.fillups, active.id);
     const result = calcFill(
       active.tankCapacity,
@@ -275,6 +336,7 @@ function render() {
       consumption: formData.consumption,
       fuelId: formData.fuelId,
       price: formData.price,
+      networkId: formData.networkId,
       stationId: formData.stationId,
       litersToFull: result.litersToFull,
       cost: result.cost,
@@ -293,7 +355,7 @@ function render() {
     }, 2500);
   });
 
-  syncStationLogo();
+  syncNetworkLogo();
   recalc();
 }
 

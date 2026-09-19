@@ -1,7 +1,7 @@
-import { networkStations } from './station-networks.js';
+import { createDefaultNetworks, DEFAULT_NETWORKS } from './station-networks.js';
 
 const STORAGE_KEY = 'doley:v1';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 function uid(prefix = 'id') {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -29,39 +29,102 @@ function defaultData() {
       { id: fuel95, name: 'АИ-95 Plus' },
       { id: fuel98, name: 'АИ-98' },
     ],
-    stations: networkStations(uid),
+    networks: createDefaultNetworks(uid),
+    stations: [],
     fillups: [],
     lastInputs: {},
   };
 }
 
-function seedNetworksIfNeeded(data) {
-  if (!Array.isArray(data.stations)) data.stations = [];
-
-  const onlyPlaceholder =
-    data.stations.length === 0 ||
-    (data.stations.length === 1 &&
-      (!data.stations[0].logo || data.stations[0].name === 'Заправка'));
-
-  if (onlyPlaceholder) {
-    const oldId = data.stations[0]?.id;
-    data.stations = networkStations(uid);
-    if (oldId && data.fillups?.length) {
-      const firstId = data.stations[0].id;
-      data.fillups.forEach((f) => {
-        if (f.stationId === oldId) f.stationId = firstId;
+function seedMissingNetworks(data) {
+  if (!Array.isArray(data.networks)) data.networks = [];
+  const names = new Set(data.networks.map((n) => n.name.toLowerCase()));
+  for (const def of DEFAULT_NETWORKS) {
+    if (!names.has(def.name.toLowerCase())) {
+      data.networks.push({
+        id: uid('net'),
+        name: def.name,
+        logo: def.logo,
       });
     }
+  }
+}
+
+/** v1/v2: stations были и сетями, и точками → разделить */
+function migrateToNetworksAndStations(data) {
+  if (Array.isArray(data.networks) && data.schemaVersion >= 3) {
+    seedMissingNetworks(data);
+    if (!Array.isArray(data.stations)) data.stations = [];
     return data;
   }
 
-  // Дополнить отсутствующие сети по имени, не трогая пользовательские
-  const names = new Set(data.stations.map((s) => s.name.toLowerCase()));
-  for (const net of networkStations(uid)) {
-    if (!names.has(net.name.toLowerCase())) {
-      data.stations.push(net);
+  const oldStations = Array.isArray(data.stations) ? data.stations : [];
+  const networks = [];
+  const stations = [];
+  const oldIdToNetworkId = {};
+
+  const onlyPlaceholder =
+    oldStations.length === 0 ||
+    (oldStations.length === 1 &&
+      (!oldStations[0].logo || oldStations[0].name === 'Заправка'));
+
+  if (onlyPlaceholder) {
+    data.networks = createDefaultNetworks(uid);
+    data.stations = [];
+    seedMissingNetworks(data);
+    return data;
+  }
+
+  for (const s of oldStations) {
+    const hasAddress = Boolean(String(s.address || '').trim());
+    if (hasAddress && !s.isNetwork) {
+      let net = networks.find((n) => n.name.toLowerCase() === String(s.name || '').toLowerCase());
+      if (!net) {
+        net = {
+          id: uid('net'),
+          name: s.name || 'Сеть',
+          logo: s.logo || '',
+        };
+        networks.push(net);
+      }
+      stations.push({
+        id: s.id,
+        networkId: net.id,
+        address: String(s.address).trim(),
+      });
+      oldIdToNetworkId[s.id] = net.id;
+    } else {
+      const net = {
+        id: s.id,
+        name: s.name || 'Сеть',
+        logo: s.logo || '',
+      };
+      networks.push(net);
+      oldIdToNetworkId[s.id] = net.id;
     }
   }
+
+  data.networks = networks;
+  data.stations = stations;
+  seedMissingNetworks(data);
+
+  // fillups: старый stationId мог указывать на сеть
+  if (Array.isArray(data.fillups)) {
+    data.fillups.forEach((f) => {
+      const sid = f.stationId;
+      const asStation = stations.find((st) => st.id === sid);
+      if (asStation) {
+        f.networkId = asStation.networkId;
+        return;
+      }
+      const netId = oldIdToNetworkId[sid];
+      if (netId) {
+        f.networkId = netId;
+        f.stationId = null;
+      }
+    });
+  }
+
   return data;
 }
 
@@ -80,7 +143,7 @@ function migrate(data) {
   if (!Array.isArray(next.fillups)) next.fillups = [];
   if (!next.lastInputs || typeof next.lastInputs !== 'object') next.lastInputs = {};
 
-  seedNetworksIfNeeded(next);
+  migrateToNetworksAndStations(next);
   next.schemaVersion = SCHEMA_VERSION;
   return next;
 }
@@ -129,6 +192,25 @@ export function getLastInputs(data, carId) {
 export function setLastInputs(data, carId, inputs) {
   data.lastInputs[carId] = { ...inputs };
   saveData(data);
+}
+
+export function getNetwork(data, networkId) {
+  return data.networks.find((n) => n.id === networkId) || null;
+}
+
+export function getStation(data, stationId) {
+  return data.stations.find((s) => s.id === stationId) || null;
+}
+
+export function stationsByNetwork(data, networkId) {
+  return data.stations.filter((s) => s.networkId === networkId);
+}
+
+export function stationLabel(data, station) {
+  if (!station) return '—';
+  const net = getNetwork(data, station.networkId);
+  const netName = net?.name || 'Сеть';
+  return station.address ? `${netName} — ${station.address}` : netName;
 }
 
 export { uid, STORAGE_KEY };

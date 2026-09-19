@@ -212,10 +212,13 @@ select {
   background: var(--bg-field);
 }
 
-.station-logo-lg.logo-ph {
-  display: grid;
-  place-items: center;
-  font-size: 18px;
+.station-logo-lg[hidden] {
+  display: none !important;
+}
+
+.logo-empty {
+  display: inline-block;
+  background: var(--bg-field);
 }
 
 .section-title {
