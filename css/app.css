@@ -45,6 +45,57 @@ select {
   color: inherit;
 }
 
+.update-banner {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(480px, 100%);
+  z-index: 50;
+  padding: calc(10px + var(--safe-top)) 12px 10px;
+  pointer-events: none;
+}
+
+.update-banner[hidden] {
+  display: none !important;
+}
+
+.update-banner-inner {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #152238;
+  border: 1px solid rgba(61, 214, 198, 0.35);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  animation: slideDown 0.25s ease;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-12px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.update-banner-text {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.update-banner-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.update-banner-actions .btn-primary,
+.update-banner-actions .btn-secondary {
+  margin: 0;
+  padding: 10px 12px;
+}
+
 .app-shell {
   max-width: 480px;
   margin: 0 auto;

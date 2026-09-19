@@ -1,9 +1,10 @@
-const CACHE = 'doley-static-v3';
+const CACHE = 'doley-static-v4';
 const ASSETS = [
   './',
   './index.html',
   './css/app.css',
   './js/app.js',
+  './js/updates.js',
   './js/storage.js',
   './js/calc.js',
   './js/cars.js',
@@ -20,39 +21,82 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then(async (cache) => {
-      await Promise.all(
-        ASSETS.map((url) => cache.add(url).catch(() => undefined))
-      );
-      return self.skipWaiting();
-    })
+    caches.open(CACHE).then((cache) =>
+      Promise.all(ASSETS.map((url) => cache.add(url).catch(() => undefined)))
+    )
   );
+  // Не вызываем skipWaiting сразу — ждём согласия пользователя в приложении
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const fetched = fetch(request)
-        .then((response) => {
-          if (response && response.ok && new URL(request.url).origin === self.location.origin) {
-            const clone = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || fetched;
-    })
-  );
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // HTML и SW — сначала сеть, чтобы быстрее видеть обновления
+  const isNavigate = request.mode === 'navigate' || request.destination === 'document';
+  const isHtml = url.pathname.endsWith('.html') || url.pathname.endsWith('/');
+
+  if (isNavigate || isHtml) {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  event.respondWith(cacheFirst(request));
 });
+
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (response && response.ok) {
+      const cache = await caches.open(CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await caches.match(request);
+    return cached || caches.match('./index.html');
+  }
+}
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) {
+    // фоновое обновление кэша
+    fetch(request)
+      .then((response) => {
+        if (response && response.ok) {
+          caches.open(CACHE).then((cache) => cache.put(request, response));
+        }
+      })
+      .catch(() => {});
+    return cached;
+  }
+  try {
+    const response = await fetch(request);
+    if (response && response.ok) {
+      const cache = await caches.open(CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    return cached;
+  }
+}

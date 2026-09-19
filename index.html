@@ -20,6 +20,15 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
 </head>
 <body>
+  <div id="update-banner" class="update-banner" hidden role="status" aria-live="polite">
+    <div class="update-banner-inner">
+      <p class="update-banner-text">Доступно обновление «Долей!»</p>
+      <div class="update-banner-actions">
+        <button type="button" class="btn-secondary" id="update-later">Позже</button>
+        <button type="button" class="btn-primary" id="update-apply">Обновить</button>
+      </div>
+    </div>
+  </div>
   <div class="app-shell">
     <main class="screens">
       <section id="screen-refuel" class="screen is-active" aria-label="Заправка"></section>

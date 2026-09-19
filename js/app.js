@@ -2,6 +2,7 @@ import { loadData, saveData } from './storage.js';
 import { initRefuel, refreshRefuel } from './screens/refuel.js';
 import { initHistory, refreshHistory } from './screens/history.js';
 import { initSettings, refreshSettings } from './screens/settings.js';
+import { initUpdates } from './updates.js';
 
 let data = loadData();
 
@@ -49,9 +50,4 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
 });
 
 showScreen('refuel');
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  });
-}
+initUpdates();
