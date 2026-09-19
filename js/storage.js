@@ -190,7 +190,16 @@ export function getLastInputs(data, carId) {
 }
 
 export function setLastInputs(data, carId, inputs) {
-  data.lastInputs[carId] = { ...inputs };
+  const prev = data.lastInputs[carId] || {};
+  const next = { ...prev, ...inputs };
+  // Пустые одометр/расход не затирают ранее запомненные значения
+  if (inputs.odometer === '' || inputs.odometer == null) {
+    next.odometer = prev.odometer ?? '';
+  }
+  if (inputs.consumption === '' || inputs.consumption == null) {
+    next.consumption = prev.consumption ?? '';
+  }
+  data.lastInputs[carId] = next;
   saveData(data);
 }
 

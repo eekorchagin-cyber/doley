@@ -115,13 +115,22 @@ function formatNum(n) {
   return Number(n).toLocaleString('ru-RU', { maximumFractionDigits: 1, minimumFractionDigits: 0 });
 }
 
+function pickRemembered(...values) {
+  for (const v of values) {
+    if (v === null || v === undefined) continue;
+    const s = String(v).trim();
+    if (s !== '') return s;
+  }
+  return '';
+}
+
 function render() {
   const data = getData();
   const car = getActiveCar(data);
   const last = getLastInputs(data, car.id);
   const lastFill = data.fillups
     .filter((f) => f.carId === car.id)
-    .sort((a, b) => String(b.date).localeCompare(String(a.date)) || b.odometer - a.odometer)[0];
+    .sort((a, b) => b.odometer - a.odometer || String(b.date).localeCompare(String(a.date)))[0];
 
   let networkId =
     last?.networkId ?? lastFill?.networkId ?? data.networks[0]?.id ?? '';
@@ -140,13 +149,13 @@ function render() {
     '';
 
   const defaults = {
-    odometer: last?.odometer ?? lastFill?.odometer ?? '',
+    odometer: pickRemembered(last?.odometer, lastFill?.odometer),
     networkId,
     stationId,
-    rangeKm: last?.rangeKm ?? '',
-    consumption: last?.consumption ?? lastFill?.consumption ?? '9.5',
+    rangeKm: pickRemembered(last?.rangeKm),
+    consumption: pickRemembered(last?.consumption, lastFill?.consumption, '9.5'),
     fuelId: last?.fuelId ?? lastFill?.fuelId ?? data.fuels[0]?.id ?? '',
-    price: last?.price ?? lastFill?.price ?? '',
+    price: pickRemembered(last?.price, lastFill?.price),
     date: last?.date && last.date === todayISO() ? last.date : todayISO(),
   };
 
