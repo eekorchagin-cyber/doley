@@ -1,14 +1,14 @@
 :root {
-  --bg: #0b1220;
-  --bg-elev: #121b2e;
-  --bg-field: #182338;
-  --line: rgba(255, 255, 255, 0.08);
-  --text: #e8eef7;
-  --muted: #8b97a8;
-  --accent: #3dd6c6;
-  --accent-dim: rgba(61, 214, 198, 0.15);
-  --warn: #f0a202;
-  --danger: #e4572e;
+  --bg: #f4f7fb;
+  --bg-elev: #ffffff;
+  --bg-field: #eef2f7;
+  --line: rgba(15, 35, 60, 0.1);
+  --text: #152033;
+  --muted: #6b7a90;
+  --accent: #0d9f8f;
+  --accent-dim: rgba(13, 159, 143, 0.12);
+  --warn: #c47d00;
+  --danger: #d6452e;
   --radius: 12px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -27,8 +27,8 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(120% 80% at 50% -20%, #1a2a45 0%, transparent 55%),
-    linear-gradient(180deg, #0e1628 0%, var(--bg) 40%, #080d16 100%);
+    radial-gradient(120% 80% at 50% -15%, #dceaf8 0%, transparent 55%),
+    linear-gradient(180deg, #e8eef6 0%, var(--bg) 45%, #e4ebf4 100%);
   color: var(--text);
   font-family: var(--font);
   -webkit-tap-highlight-color: transparent;
@@ -67,9 +67,9 @@ select {
   gap: 10px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: #152238;
-  border: 1px solid rgba(61, 214, 198, 0.35);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  background: #ffffff;
+  border: 1px solid rgba(13, 159, 143, 0.35);
+  box-shadow: 0 12px 32px rgba(20, 40, 70, 0.12);
   animation: slideDown 0.25s ease;
 }
 
@@ -140,7 +140,7 @@ select {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: linear-gradient(145deg, var(--car-color, #1a3a5c), #0b1220);
+  background: linear-gradient(145deg, var(--car-color, #4a7ab0), #d8e4f2);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -295,11 +295,12 @@ select {
   padding: 18px 16px;
   border-radius: 16px;
   background:
-    linear-gradient(160deg, rgba(61, 214, 198, 0.12), transparent 50%),
+    linear-gradient(160deg, rgba(13, 159, 143, 0.1), transparent 50%),
     var(--bg-elev);
-  border: 1px solid rgba(61, 214, 198, 0.25);
+  border: 1px solid rgba(13, 159, 143, 0.28);
   display: grid;
   gap: 10px;
+  box-shadow: 0 4px 16px rgba(20, 40, 70, 0.06);
 }
 
 .result-block.result-row {
@@ -369,7 +370,7 @@ select {
 
 .btn-primary {
   background: var(--accent);
-  color: #041018;
+  color: #ffffff;
   margin-top: 4px;
 }
 
@@ -412,7 +413,7 @@ select {
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   padding: 8px 10px calc(8px + var(--safe-bottom));
-  background: rgba(11, 18, 32, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--line);
   z-index: 20;
@@ -459,7 +460,7 @@ select {
 
 .stab.active {
   color: var(--accent);
-  border-color: rgba(61, 214, 198, 0.35);
+  border-color: rgba(13, 159, 143, 0.4);
   background: var(--accent-dim);
 }
 
@@ -679,7 +680,7 @@ select {
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(20, 40, 70, 0.35);
   display: grid;
   place-items: end center;
   z-index: 40;

@@ -206,16 +206,16 @@ function drawChart(data, carId, rows) {
         x: {
           stacked: true,
           ticks: {
-            color: (ctx) => (mixedFlags[ctx.index] ? '#f0a202' : '#9aa4b2'),
+            color: (ctx) => (mixedFlags[ctx.index] ? '#c47d00' : '#6b7a90'),
             font: { size: 11 },
           },
           grid: { display: false },
         },
         y: {
           stacked: true,
-          ticks: { color: '#9aa4b2' },
-          grid: { color: 'rgba(255,255,255,0.06)' },
-          title: { display: true, text: 'литры', color: '#9aa4b2' },
+          ticks: { color: '#6b7a90' },
+          grid: { color: 'rgba(15, 35, 60, 0.08)' },
+          title: { display: true, text: 'литры', color: '#6b7a90' },
         },
       },
     },
