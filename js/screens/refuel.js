@@ -46,6 +46,24 @@ function persistInputs() {
   setLastInputs(data, car.id, readForm());
 }
 
+function syncStationLogo() {
+  const data = getData();
+  const id = root.querySelector('#station')?.value;
+  const station = data.stations.find((s) => s.id === id);
+  const img = root.querySelector('#station-logo');
+  const ph = root.querySelector('#station-logo-ph');
+  if (!img || !ph) return;
+  if (station?.logo) {
+    img.src = station.logo;
+    img.hidden = false;
+    ph.hidden = true;
+  } else {
+    img.removeAttribute('src');
+    img.hidden = true;
+    ph.hidden = false;
+  }
+}
+
 function recalc() {
   const data = getData();
   const car = getActiveCar(data);
@@ -94,14 +112,16 @@ function render() {
     litersActual: '',
   };
 
+  const selectedStation = data.stations.find((s) => s.id === defaults.stationId) || data.stations[0];
+
   root.innerHTML = `
     <header class="screen-header">
       <div class="brand-row">
         <div class="car-thumb" style="--car-color:${car.color}">
           ${car.image ? `<img src="${car.image}" alt="">` : `<span class="car-glyph">◆</span>`}
         </div>
-        <div class="brand-text">
-          <h1 class="app-title">Долей!</h1>
+        <h1 class="app-title">Долей!</h1>
+        <div class="brand-meta">
           <select id="car-select" class="car-select" aria-label="Автомобиль">
             ${listCars(data)
               .map(
@@ -112,31 +132,47 @@ function render() {
               )
               .join('')}
           </select>
+          <p class="tank-meta">Бак ${car.tankCapacity} л</p>
         </div>
       </div>
-      <p class="tank-meta">Бак ${car.tankCapacity} л</p>
     </header>
 
     <form id="refuel-form" class="dash-form" autocomplete="off">
-      <label class="field">
-        <span>Одометр, км</span>
-        <input id="odo" inputmode="numeric" type="number" step="1" min="0" value="${escapeAttr(
-          defaults.odometer
-        )}" required>
-      </label>
+      <div class="field-row">
+        <label class="field">
+          <span>Одометр, км</span>
+          <input id="odo" inputmode="numeric" type="number" step="1" min="0" value="${escapeAttr(
+            defaults.odometer
+          )}" required>
+        </label>
+        <label class="field">
+          <span>Дата</span>
+          <input id="date" type="date" value="${escapeAttr(defaults.date)}" required>
+        </label>
+      </div>
 
       <label class="field">
-        <span>АЗС</span>
-        <select id="station">
-          ${data.stations
-            .map(
-              (s) =>
-                `<option value="${s.id}" ${s.id === defaults.stationId ? 'selected' : ''}>${escapeHtml(
-                  s.name
-                )}${s.address ? ' — ' + escapeHtml(s.address) : ''}</option>`
-            )
-            .join('')}
-        </select>
+        <span>Сеть АЗС</span>
+        <div class="station-picker">
+          <img id="station-logo" class="station-logo-lg" alt="" ${
+            selectedStation?.logo
+              ? `src="${selectedStation.logo}"`
+              : 'hidden'
+          }>
+          <span id="station-logo-ph" class="station-logo-lg logo-ph" ${
+            selectedStation?.logo ? 'hidden' : ''
+          }>⛽</span>
+          <select id="station">
+            ${data.stations
+              .map(
+                (s) =>
+                  `<option value="${s.id}" ${s.id === defaults.stationId ? 'selected' : ''}>${escapeHtml(
+                    s.name
+                  )}${s.address ? ' — ' + escapeHtml(s.address) : ''}</option>`
+              )
+              .join('')}
+          </select>
+        </div>
       </label>
 
       <div class="field-row">
@@ -176,14 +212,9 @@ function render() {
         </label>
       </div>
 
-      <label class="field">
-        <span>Дата</span>
-        <input id="date" type="date" value="${escapeAttr(defaults.date)}" required>
-      </label>
-
       <p id="calib-hint" class="calib-hint" hidden></p>
 
-      <div class="result-block" aria-live="polite">
+      <div class="result-block result-row" aria-live="polite">
         <div class="result-main">
           <span class="result-label">К заправке</span>
           <span class="result-value"><span id="result-liters">0</span> <small>л</small></span>
@@ -217,6 +248,7 @@ function render() {
     persistInputs();
   });
   form.addEventListener('change', () => {
+    syncStationLogo();
     recalc();
     persistInputs();
   });
@@ -261,6 +293,7 @@ function render() {
     }, 2500);
   });
 
+  syncStationLogo();
   recalc();
 }
 

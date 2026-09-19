@@ -55,9 +55,9 @@ export function updateStation(data, id, fields) {
 }
 
 export function deleteStation(data, id) {
-  if (data.stations.length <= 1) return { ok: false, reason: 'Нужна хотя бы одна АЗС' };
+  if (data.stations.length <= 1) return { ok: false, reason: 'Нужна хотя бы одна сеть АЗС' };
   const used = data.fillups.some((f) => f.stationId === id);
-  if (used) return { ok: false, reason: 'АЗС используется в заправках' };
+  if (used) return { ok: false, reason: 'Сеть используется в заправках' };
   data.stations = data.stations.filter((s) => s.id !== id);
   saveData(data);
   return { ok: true };

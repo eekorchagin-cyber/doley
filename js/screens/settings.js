@@ -149,7 +149,7 @@ function renderDicts(data) {
     </section>
 
     <section class="settings-block">
-      <h3 class="block-title">АЗС</h3>
+      <h3 class="block-title">Сети заправок</h3>
       <ul class="dict-list">
         ${listStations(data)
           .map(
@@ -158,7 +158,7 @@ function renderDicts(data) {
               ${s.logo ? `<img class="station-logo" src="${s.logo}" alt="">` : `<span class="logo-ph">⛽</span>`}
               <div>
                 <strong>${escapeHtml(s.name)}</strong>
-                <small>${escapeHtml(s.address || 'без адреса')}</small>
+                <small>${escapeHtml(s.address || 'сеть АЗС')}</small>
               </div>
             </div>
             <div class="dict-actions">
@@ -169,7 +169,7 @@ function renderDicts(data) {
           )
           .join('')}
       </ul>
-      <button type="button" class="btn-secondary" id="add-station">+ АЗС</button>
+      <button type="button" class="btn-secondary" id="add-station">+ Сеть</button>
     </section>
 
     <div id="settings-modal" class="modal" hidden></div>
@@ -364,9 +364,9 @@ function openStationForm(id) {
   modal.hidden = false;
   modal.innerHTML = `
     <div class="modal-card">
-      <h3>${station ? 'АЗС' : 'Новая АЗС'}</h3>
-      <label class="field"><span>Название</span><input id="st-name" value="${escapeAttr(station?.name || '')}"></label>
-      <label class="field"><span>Адрес</span><input id="st-addr" value="${escapeAttr(station?.address || '')}"></label>
+      <h3>${station ? 'Сеть АЗС' : 'Новая сеть'}</h3>
+      <label class="field"><span>Название сети</span><input id="st-name" value="${escapeAttr(station?.name || '')}"></label>
+      <label class="field"><span>Адрес <em>(необяз.)</em></span><input id="st-addr" value="${escapeAttr(station?.address || '')}"></label>
       <label class="field"><span>Логотип</span><input id="st-logo" type="file" accept="image/*"></label>
       ${station?.logo ? `<img class="preview-img" src="${station.logo}" alt="">` : ''}
       <div class="modal-actions">

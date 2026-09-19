@@ -1,4 +1,4 @@
-const CACHE = 'doley-static-v2';
+const CACHE = 'doley-static-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const ASSETS = [
   './js/calc.js',
   './js/cars.js',
   './js/dictionaries.js',
+  './js/station-networks.js',
   './js/screens/refuel.js',
   './js/screens/history.js',
   './js/screens/settings.js',
