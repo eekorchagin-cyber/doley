@@ -194,12 +194,20 @@ select {
 .station-picker {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .station-picker select {
-  flex: 1;
   min-width: 0;
+}
+
+.station-picker .network-select {
+  flex: 0 1 38%;
+  max-width: 42%;
+}
+
+.station-picker .address-select {
+  flex: 1 1 0;
 }
 
 .station-logo-lg {
@@ -496,6 +504,31 @@ select {
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+
+.dict-main-inline {
+  flex: 1;
+}
+
+.dict-inline-text {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  min-width: 0;
+  font-size: 0.9rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+.dict-inline-text strong {
+  display: inline;
+  font-size: inherit;
+}
+
+.dict-sep {
+  color: var(--muted);
 }
 
 .dict-main strong {

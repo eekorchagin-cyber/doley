@@ -187,12 +187,13 @@ function renderDicts(data) {
                 .map((s) => {
                   const net = getNetwork(data, s.networkId);
                   return `<li class="dict-item">
-            <div class="dict-main">
+            <div class="dict-main dict-main-inline">
               ${net?.logo ? `<img class="station-logo" src="${net.logo}" alt="">` : `<span class="station-logo logo-empty"></span>`}
-              <div>
-                <strong>${escapeHtml(s.address)}</strong>
-                <small>${escapeHtml(net?.name || 'сеть не указана')}</small>
-              </div>
+              <span class="dict-inline-text">
+                <strong>${escapeHtml(net?.name || 'Сеть')}</strong>
+                <span class="dict-sep">·</span>
+                <span>${escapeHtml(s.address)}</span>
+              </span>
             </div>
             <div class="dict-actions">
               <button type="button" class="btn-icon" data-edit-station="${s.id}">✎</button>

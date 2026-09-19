@@ -82,7 +82,7 @@ function refillStations(preferredId) {
             )}</option>`
         )
         .join('')
-    : `<option value="">Нет точек — добавьте в справочнике</option>`;
+    : `<option value="">Нет адреса</option>`;
   select.disabled = list.length === 0;
 }
 
@@ -200,12 +200,12 @@ function render() {
       </div>
 
       <label class="field">
-        <span>Сеть АЗС</span>
+        <span>АЗС</span>
         <div class="station-picker">
           <img id="network-logo" class="station-logo-lg" alt="" ${
             selectedNetwork?.logo ? `src="${selectedNetwork.logo}"` : 'hidden'
           }>
-          <select id="network">
+          <select id="network" class="network-select" aria-label="Сеть">
             ${data.networks
               .map(
                 (n) =>
@@ -215,25 +215,23 @@ function render() {
               )
               .join('')}
           </select>
+          <select id="station" class="address-select" aria-label="Адрес" ${
+            networkStations.length ? '' : 'disabled'
+          }>
+            ${
+              networkStations.length
+                ? networkStations
+                    .map(
+                      (s) =>
+                        `<option value="${s.id}" ${s.id === defaults.stationId ? 'selected' : ''}>${escapeHtml(
+                          s.address
+                        )}</option>`
+                    )
+                    .join('')
+                : `<option value="">Нет адреса</option>`
+            }
+          </select>
         </div>
-      </label>
-
-      <label class="field">
-        <span>Заправка (адрес)</span>
-        <select id="station" ${networkStations.length ? '' : 'disabled'}>
-          ${
-            networkStations.length
-              ? networkStations
-                  .map(
-                    (s) =>
-                      `<option value="${s.id}" ${s.id === defaults.stationId ? 'selected' : ''}>${escapeHtml(
-                        s.address
-                      )}</option>`
-                  )
-                  .join('')
-              : `<option value="">Нет точек — добавьте в справочнике</option>`
-          }
-        </select>
       </label>
 
       <div class="field-row">
