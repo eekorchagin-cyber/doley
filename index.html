@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Долей!">
+  <meta name="theme-color" content="#1a6fd4">
+  <meta name="description" content="Расчёт количества топлива до полного бака">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./assets/icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./assets/icon-512.png">
+  <title>Долей!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <main class="screens">
+      <section id="screen-refuel" class="screen is-active" aria-label="Заправка"></section>
+      <section id="screen-history" class="screen" hidden aria-label="История"></section>
+      <section id="screen-settings" class="screen" hidden aria-label="Настройки"></section>
+    </main>
+
+    <nav class="tab-bar" aria-label="Навигация">
+      <button type="button" class="tab-btn active" data-screen="refuel">
+        <span class="tab-icon">▣</span>
+        <span>Заправка</span>
+      </button>
+      <button type="button" class="tab-btn" data-screen="history">
+        <span class="tab-icon">▤</span>
+        <span>История</span>
+      </button>
+      <button type="button" class="tab-btn" data-screen="settings">
+        <span class="tab-icon">⚙</span>
+        <span>Настройки</span>
+      </button>
+    </nav>
+  </div>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
