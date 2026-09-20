@@ -1,4 +1,4 @@
-import { calcFill, computeCalibration, round2 } from '../calc.js';
+import { calcFill, calcCost, computeCalibration, round2 } from '../calc.js';
 import {
   getActiveCar,
   getLastInputs,
@@ -101,13 +101,19 @@ function recalc() {
   const car = getActiveCar(data);
   const form = readForm();
   const calib = computeCalibration(data.fillups, car.id);
-  const result = calcFill(car.tankCapacity, form.consumption, form.rangeKm, form.price, calib.k);
+  const planned = calcFill(car.tankCapacity, form.consumption, form.rangeKm, form.price, calib.k);
+  const cost = calcCost(form.litersActual, form.price);
 
   const litersEl = root.querySelector('#result-liters');
   const costEl = root.querySelector('#result-cost');
   const hintEl = root.querySelector('#calib-hint');
-  if (litersEl) litersEl.textContent = formatNum(result.litersToFull);
-  if (costEl) costEl.textContent = formatNum(result.cost);
+  const costHint = root.querySelector('#cost-hint');
+
+  if (litersEl) litersEl.textContent = formatNum(planned.litersToFull);
+  if (costEl) costEl.textContent = cost != null ? formatNum(cost) : '—';
+  if (costHint) {
+    costHint.hidden = !(form.litersActual === '' || form.litersActual == null);
+  }
   if (hintEl) {
     if (calib.sampleCount > 0) {
       hintEl.textContent = `Коррекция k=${calib.k}${
@@ -118,7 +124,7 @@ function recalc() {
       hintEl.hidden = true;
     }
   }
-  return result;
+  return { planned, cost };
 }
 
 function formatNum(n) {
@@ -179,8 +185,7 @@ function render() {
     .filter((f) => f.carId === car.id)
     .sort((a, b) => b.odometer - a.odometer || String(b.date).localeCompare(String(a.date)))[0];
 
-  let networkId =
-    last?.networkId ?? lastFill?.networkId ?? data.networks[0]?.id ?? '';
+  let networkId = last?.networkId ?? lastFill?.networkId ?? data.networks[0]?.id ?? '';
   if (last?.stationId) {
     const st = data.stations.find((s) => s.id === last.stationId);
     if (st) networkId = st.networkId;
@@ -323,34 +328,40 @@ function render() {
 
       <div class="result-block result-row" aria-live="polite">
         <div class="result-main">
-          <span class="result-label">К заправке</span>
+          <span class="result-label">План к заправке</span>
           <span class="result-value"><span id="result-liters">0</span> <small>л</small></span>
         </div>
         <div class="result-cost">
-          <span class="result-label">Стоимость</span>
-          <span class="result-value-sm"><span id="result-cost">0</span> <small>₽</small></span>
+          <span class="result-label">Стоимость (факт)</span>
+          <span class="result-value-sm"><span id="result-cost">—</span> <small>₽</small></span>
         </div>
       </div>
 
-      <label class="field field-optional">
-        <span>Факт залито, л <em>(необяз.)</em></span>
-        <input id="liters-actual" inputmode="decimal" type="number" step="0.01" min="0" placeholder="для коррекции" value="${escapeAttr(
+      <label class="field field-actual">
+        <span>Факт залито, л</span>
+        <input id="liters-actual" inputmode="decimal" type="number" step="0.01" min="0.01" value="${escapeAttr(
           defaults.litersActual
-        )}">
+        )}" placeholder="сколько залили" required>
       </label>
+      <p id="cost-hint" class="cost-hint">Стоимость = факт залитых литров × цена за литр</p>
 
+      <div class="form-spacer" aria-hidden="true"></div>
+      <p id="save-msg" class="save-msg" ${awaitingNew ? '' : 'hidden'}>
+        ${awaitingNew ? 'Заправка сохранена. Нажмите «Новая заправка» для следующего ввода.' : ''}
+      </p>
+    </form>
+
+    <div class="sticky-actions">
       ${
         awaitingNew
-          ? `<button type="button" class="btn-primary" id="btn-new-fillup">Новая заправка</button>
-             <p id="save-msg" class="save-msg">Заправка сохранена. Нажмите «Новая заправка» для следующего ввода.</p>`
-          : `<button type="submit" class="btn-primary">Сохранить заправку</button>
-             <p id="save-msg" class="save-msg" hidden></p>`
+          ? `<button type="button" class="btn-primary btn-new-fillup" id="btn-new-fillup">Новая заправка</button>`
+          : `<button type="submit" form="refuel-form" class="btn-primary btn-new-fillup" id="btn-save-fillup">Сохранить заправку</button>`
       }
-    </form>
+    </div>
   `;
 
   root.querySelector('#car-select').addEventListener('change', (e) => {
-    awaitingNew = false;
+    setAwaitingNew(false);
     const d = getData();
     setActiveCar(d, e.target.value);
     setData(d);
@@ -390,14 +401,21 @@ function render() {
       alert('Добавьте заправку с адресом в справочнике и выберите её');
       return;
     }
+    if (!formData.litersActual || Number(formData.litersActual) <= 0) {
+      alert('Укажите фактически залитое количество топлива');
+      root.querySelector('#liters-actual')?.focus();
+      return;
+    }
+
     const calib = computeCalibration(d.fillups, active.id);
-    const result = calcFill(
+    const planned = calcFill(
       active.tankCapacity,
       formData.consumption,
       formData.rangeKm,
       formData.price,
       calib.k
     );
+    const cost = calcCost(formData.litersActual, formData.price);
 
     const payload = {
       carId: active.id,
@@ -409,8 +427,8 @@ function render() {
       price: formData.price,
       networkId: formData.networkId,
       stationId: formData.stationId,
-      litersToFull: result.litersToFull,
-      cost: result.cost,
+      litersToFull: planned.litersToFull,
+      cost: cost ?? 0,
       litersActual: formData.litersActual,
     };
 
@@ -434,7 +452,7 @@ function render() {
     );
     setData(d);
 
-    awaitingNew = true;
+    setAwaitingNew(true);
     if (onSaved) onSaved();
     render();
   });

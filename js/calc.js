@@ -1,25 +1,29 @@
 /**
  * remainingLiters ≈ (R / 100) * C * k
  * litersToFull = max(0, V - remainingLiters)
- * cost = litersToFull * P
  */
 
 export function calcFill(tankCapacity, consumption, rangeKm, price, k = 1) {
   const V = Number(tankCapacity) || 0;
   const C = Number(consumption) || 0;
   const R = Number(rangeKm) || 0;
-  const P = Number(price) || 0;
   const factor = Number(k) > 0 ? Number(k) : 1;
 
   const remainingLiters = (R / 100) * C * factor;
   const litersToFull = Math.max(0, V - remainingLiters);
-  const cost = litersToFull * P;
 
   return {
     remainingLiters: round2(remainingLiters),
     litersToFull: round2(litersToFull),
-    cost: round2(cost),
   };
+}
+
+/** Стоимость по фактическому объёму */
+export function calcCost(litersActual, price) {
+  const L = Number(litersActual);
+  const P = Number(price) || 0;
+  if (!Number.isFinite(L) || L < 0) return null;
+  return round2(L * P);
 }
 
 export function round2(n) {
