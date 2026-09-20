@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Долей!">
   <meta name="theme-color" content="#e8eef6">
   <meta name="description" content="Расчёт количества топлива до полного бака">
-  <meta name="doley-version" content="13">
+  <meta name="doley-version" content="14">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
@@ -106,7 +106,7 @@
       }
 
       async function forceApply() {
-        var next = remoteVersion != null ? remoteVersion : 13;
+        var next = remoteVersion != null ? remoteVersion : 14;
         try {
           if ('serviceWorker' in navigator) {
             var regs = await navigator.serviceWorker.getRegistrations();
@@ -174,7 +174,7 @@
           var remote = Number(data.version);
           if (!isFinite(remote)) return;
           remoteVersion = remote;
-          remoteCache = data.cache || 'doley-static-v13';
+          remoteCache = data.cache || 'doley-static-v14';
           var local = Number(localStorage.getItem(VERSION_KEY) || '0');
           var stale = await hasStaleCaches(remoteCache);
           if (remote > local || stale) {
