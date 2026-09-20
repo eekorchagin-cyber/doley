@@ -590,25 +590,50 @@ select {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 9px 12px;
-  align-items: end;
+  align-items: stretch;
 }
 
-.result-facts .result-cost {
-  min-width: 0;
-}
-
+.result-facts .result-cost,
 .result-facts .field-actual {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin: 0;
   min-width: 0;
+  min-height: 0;
 }
 
-.result-facts .field-actual span {
-  margin-bottom: 4px;
+.result-facts .result-cost .result-label,
+.result-facts .field-actual > span {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  line-height: 1.2;
+  min-height: 1.2em;
 }
 
 .result-facts .result-value-sm {
-  font-size: 1.45rem;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  background: var(--bg-field);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 1.25rem;
+  font-weight: 600;
   line-height: 1.15;
+  color: var(--text);
+}
+
+.result-facts .field-actual input {
+  flex: 1 1 auto;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .result-label {
