@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Долей!">
   <meta name="theme-color" content="#e8eef6">
   <meta name="description" content="Расчёт количества топлива до полного бака">
+  <meta name="doley-version" content="13">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
@@ -75,6 +76,132 @@
       </button>
     </nav>
   </div>
+  <!--
+    Inline-проверка обновлений: работает даже если старый SW отдаёт старый js/updates.js.
+    index.html грузится network-first, поэтому этот код доезжает до телефона.
+  -->
+  <script>
+    (function () {
+      var VERSION_KEY = 'doley:app-version';
+      var DISMISS_KEY = 'doley:update-dismissed';
+      var remoteVersion = null;
+      var remoteCache = null;
+
+      function banner() {
+        return document.getElementById('update-banner');
+      }
+
+      function showBanner() {
+        if (
+          remoteVersion != null &&
+          Number(sessionStorage.getItem(DISMISS_KEY)) === Number(remoteVersion)
+        ) {
+          return;
+        }
+        var el = banner();
+        if (el) {
+          el.hidden = false;
+          window.__doleyUpdateNeeded = true;
+        }
+      }
+
+      async function forceApply() {
+        var next = remoteVersion != null ? remoteVersion : 13;
+        try {
+          if ('serviceWorker' in navigator) {
+            var regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(
+              regs.map(async function (reg) {
+                try {
+                  if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                  if (reg.active) reg.active.postMessage({ type: 'SKIP_WAITING' });
+                } catch (e) {}
+                await reg.unregister();
+              })
+            );
+          }
+          if (window.caches) {
+            var keys = await caches.keys();
+            await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          }
+        } catch (e) {}
+        localStorage.setItem(VERSION_KEY, String(next));
+        var url = new URL(window.location.href);
+        url.searchParams.set('v', String(next));
+        url.searchParams.set('_', String(Date.now()));
+        window.location.replace(url.toString());
+      }
+
+      function bindButtons() {
+        if (window.__doleyUpdateBound) return;
+        window.__doleyUpdateBound = true;
+        var el = banner();
+        if (!el) return;
+        var applyBtn = el.querySelector('#update-apply');
+        var laterBtn = el.querySelector('#update-later');
+        if (applyBtn) {
+          applyBtn.addEventListener('click', function () {
+            if (typeof window.__doleyApplyUpdate === 'function') {
+              window.__doleyApplyUpdate();
+            } else {
+              forceApply();
+            }
+          });
+        }
+        if (laterBtn) {
+          laterBtn.addEventListener('click', function () {
+            el.hidden = true;
+            if (remoteVersion != null) {
+              sessionStorage.setItem(DISMISS_KEY, String(remoteVersion));
+            }
+          });
+        }
+      }
+
+      async function hasStaleCaches(currentCache) {
+        if (!window.caches) return false;
+        var keys = await caches.keys();
+        var ours = keys.filter(function (k) { return k.indexOf('doley-static-') === 0; });
+        if (!ours.length) return false;
+        return ours.some(function (k) { return k !== currentCache; });
+      }
+
+      async function check() {
+        try {
+          var res = await fetch('./version.json?t=' + Date.now(), { cache: 'no-store' });
+          if (!res.ok) return;
+          var data = await res.json();
+          var remote = Number(data.version);
+          if (!isFinite(remote)) return;
+          remoteVersion = remote;
+          remoteCache = data.cache || 'doley-static-v13';
+          var local = Number(localStorage.getItem(VERSION_KEY) || '0');
+          var stale = await hasStaleCaches(remoteCache);
+          if (remote > local || stale) {
+            bindButtons();
+            showBanner();
+          } else if (!localStorage.getItem(VERSION_KEY)) {
+            localStorage.setItem(VERSION_KEY, String(remote));
+          }
+        } catch (e) {}
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+          bindButtons();
+          check();
+        });
+      } else {
+        bindButtons();
+        check();
+      }
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') check();
+      });
+      window.addEventListener('pageshow', check);
+      setTimeout(check, 2000);
+    })();
+  </script>
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>
