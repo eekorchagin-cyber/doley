@@ -89,7 +89,7 @@ select {
   left: 50%;
   transform: translateX(-50%);
   width: min(480px, 100%);
-  z-index: 50;
+  z-index: 60;
   padding: calc(10px + var(--safe-top)) 12px 10px;
   pointer-events: none;
 }

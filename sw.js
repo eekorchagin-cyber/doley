@@ -1,4 +1,4 @@
-const CACHE = 'doley-static-v11';
+const CACHE = 'doley-static-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -14,6 +14,7 @@ const ASSETS = [
   './js/screens/refuel.js',
   './js/screens/history.js',
   './js/screens/settings.js',
+  './version.json',
   './manifest.webmanifest',
   './assets/icon-192.png',
   './assets/icon-512.png',
@@ -51,11 +52,12 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // HTML и SW — сначала сеть, чтобы быстрее видеть обновления
+  // HTML, SW и version.json — сначала сеть, чтобы быстрее видеть обновления
   const isNavigate = request.mode === 'navigate' || request.destination === 'document';
   const isHtml = url.pathname.endsWith('.html') || url.pathname.endsWith('/');
+  const isVersion = url.pathname.endsWith('/version.json') || url.pathname.endsWith('version.json');
 
-  if (isNavigate || isHtml) {
+  if (isNavigate || isHtml || isVersion) {
     event.respondWith(networkFirst(request));
     return;
   }
