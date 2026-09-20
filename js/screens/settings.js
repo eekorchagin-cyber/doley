@@ -31,6 +31,15 @@ let getData = null;
 let setData = null;
 let onChange = null;
 let tab = 'main';
+/** @type {null | 'cars' | 'fuels' | 'networks' | 'stations'} */
+let dictView = null;
+
+const DICT_MENU = [
+  { id: 'cars', title: 'Автомобили', hint: 'Марка, номер, бак' },
+  { id: 'fuels', title: 'Виды топлива', hint: 'АИ-92, АИ-95 и др.' },
+  { id: 'networks', title: 'Сети заправок', hint: 'Название и логотип' },
+  { id: 'stations', title: 'Заправки (адреса)', hint: 'Конкретные точки АЗС' },
+];
 
 export function initSettings(el, deps) {
   root = el;
@@ -64,7 +73,9 @@ function render() {
   root.querySelectorAll('[data-stab]').forEach((btn) => {
     btn.addEventListener('click', () => {
       tab = btn.getAttribute('data-stab');
+      if (tab !== 'dicts') dictView = null;
       render();
+      scrollScreensTop();
     });
   });
 
@@ -110,9 +121,42 @@ function renderMain(data) {
 }
 
 function renderDicts(data) {
+  if (!dictView) {
+    return `
+      <section class="settings-block">
+        <p class="hint">Выберите справочник для просмотра и редактирования.</p>
+        <ul class="dict-menu">
+          ${DICT_MENU.map(
+            (item) => `<li>
+              <button type="button" class="dict-menu-item" data-open-dict="${item.id}">
+                <span class="dict-menu-text">
+                  <strong>${item.title}</strong>
+                  <small>${item.hint}</small>
+                </span>
+                <span class="dict-menu-chevron" aria-hidden="true">›</span>
+              </button>
+            </li>`
+          ).join('')}
+        </ul>
+      </section>
+    `;
+  }
+
+  const meta = DICT_MENU.find((d) => d.id === dictView);
   return `
     <section class="settings-block">
-      <h3 class="block-title">Автомобили</h3>
+      <div class="dict-view-header">
+        <button type="button" class="btn-back" id="dict-back" aria-label="Назад к справочникам">‹</button>
+        <h3 class="block-title dict-view-title">${meta?.title || 'Справочник'}</h3>
+      </div>
+      ${renderDictContent(data, dictView)}
+    </section>
+  `;
+}
+
+function renderDictContent(data, view) {
+  if (view === 'cars') {
+    return `
       <ul class="dict-list">
         ${listCars(data)
           .map(
@@ -133,10 +177,11 @@ function renderDicts(data) {
           .join('')}
       </ul>
       <button type="button" class="btn-secondary" id="add-car">+ Автомобиль</button>
-    </section>
+    `;
+  }
 
-    <section class="settings-block">
-      <h3 class="block-title">Виды топлива</h3>
+  if (view === 'fuels') {
+    return `
       <ul class="dict-list">
         ${listFuels(data)
           .map(
@@ -151,10 +196,11 @@ function renderDicts(data) {
           .join('')}
       </ul>
       <button type="button" class="btn-secondary" id="add-fuel">+ Топливо</button>
-    </section>
+    `;
+  }
 
-    <section class="settings-block">
-      <h3 class="block-title">Сети заправок</h3>
+  if (view === 'networks') {
+    return `
       <p class="hint">Только название и логотип, без адреса.</p>
       <ul class="dict-list">
         ${listNetworks(data)
@@ -175,10 +221,11 @@ function renderDicts(data) {
           .join('')}
       </ul>
       <button type="button" class="btn-secondary" id="add-net">+ Сеть</button>
-    </section>
+    `;
+  }
 
-    <section class="settings-block">
-      <h3 class="block-title">Заправки (адреса)</h3>
+  if (view === 'stations') {
+    return `
       <p class="hint">Конкретная точка: адрес и сеть, к которой она относится.</p>
       <ul class="dict-list">
         ${
@@ -206,10 +253,10 @@ function renderDicts(data) {
         }
       </ul>
       <button type="button" class="btn-secondary" id="add-station">+ Заправка</button>
-    </section>
+    `;
+  }
 
-    <div id="settings-modal" class="modal" hidden></div>
-  `;
+  return '';
 }
 
 function bindMain() {
@@ -257,7 +304,21 @@ function bindMain() {
 }
 
 function bindDicts() {
-  if (!root.querySelector('#settings-modal')) return;
+  root.querySelectorAll('[data-open-dict]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      dictView = btn.getAttribute('data-open-dict');
+      render();
+      scrollScreensTop();
+    });
+  });
+
+  root.querySelector('#dict-back')?.addEventListener('click', () => {
+    dictView = null;
+    render();
+    scrollScreensTop();
+  });
+
+  if (!dictView) return;
 
   root.querySelector('#add-car')?.addEventListener('click', () => openCarForm());
   root.querySelector('#add-fuel')?.addEventListener('click', () => {
@@ -350,10 +411,30 @@ function bindDicts() {
   });
 }
 
+/** Modal host on document.body so fixed overlay is not trapped by .screens scroll. */
+function getSettingsModalHost() {
+  let modal = document.getElementById('settings-modal-root');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'settings-modal-root';
+    modal.className = 'modal';
+    modal.hidden = true;
+    document.body.appendChild(modal);
+  }
+  return modal;
+}
+
+function closeSettingsModal() {
+  const modal = document.getElementById('settings-modal-root');
+  if (!modal) return;
+  modal.hidden = true;
+  modal.innerHTML = '';
+}
+
 function openCarForm(id) {
   const data = getData();
   const car = id ? data.cars.find((c) => c.id === id) : null;
-  const modal = root.querySelector('#settings-modal');
+  const modal = getSettingsModalHost();
   modal.hidden = false;
   modal.innerHTML = `
     <div class="modal-card">
@@ -386,11 +467,9 @@ function openCarForm(id) {
     }
   });
 
-  modal.querySelector('#c-cancel').onclick = () => {
-    modal.hidden = true;
-  };
+  modal.querySelector('#c-cancel').onclick = () => closeSettingsModal();
   modal.onclick = (e) => {
-    if (e.target === modal) modal.hidden = true;
+    if (e.target === modal) closeSettingsModal();
   };
   modal.querySelector('#c-save').onclick = () => {
     const d = getData();
@@ -404,7 +483,7 @@ function openCarForm(id) {
     if (car) updateCar(d, car.id, fields);
     else addCar(d, fields);
     setData(d);
-    modal.hidden = true;
+    closeSettingsModal();
     notify();
     render();
   };
@@ -413,7 +492,7 @@ function openCarForm(id) {
 function openNetworkForm(id) {
   const data = getData();
   const network = id ? data.networks.find((n) => n.id === id) : null;
-  const modal = root.querySelector('#settings-modal');
+  const modal = getSettingsModalHost();
   modal.hidden = false;
   modal.innerHTML = `
     <div class="modal-card">
@@ -443,11 +522,9 @@ function openNetworkForm(id) {
     }
   });
 
-  modal.querySelector('#n-cancel').onclick = () => {
-    modal.hidden = true;
-  };
+  modal.querySelector('#n-cancel').onclick = () => closeSettingsModal();
   modal.onclick = (e) => {
-    if (e.target === modal) modal.hidden = true;
+    if (e.target === modal) closeSettingsModal();
   };
   modal.querySelector('#n-save').onclick = () => {
     const d = getData();
@@ -458,7 +535,7 @@ function openNetworkForm(id) {
     if (network) updateNetwork(d, network.id, fields);
     else addNetwork(d, fields);
     setData(d);
-    modal.hidden = true;
+    closeSettingsModal();
     notify();
     render();
   };
@@ -467,7 +544,7 @@ function openNetworkForm(id) {
 function openStationForm(id) {
   const data = getData();
   const station = id ? data.stations.find((s) => s.id === id) : null;
-  const modal = root.querySelector('#settings-modal');
+  const modal = getSettingsModalHost();
   modal.hidden = false;
   modal.innerHTML = `
     <div class="modal-card">
@@ -494,11 +571,9 @@ function openStationForm(id) {
     </div>
   `;
 
-  modal.querySelector('#st-cancel').onclick = () => {
-    modal.hidden = true;
-  };
+  modal.querySelector('#st-cancel').onclick = () => closeSettingsModal();
   modal.onclick = (e) => {
-    if (e.target === modal) modal.hidden = true;
+    if (e.target === modal) closeSettingsModal();
   };
   modal.querySelector('#st-save').onclick = () => {
     const d = getData();
@@ -513,10 +588,15 @@ function openStationForm(id) {
     if (station) updateStation(d, station.id, fields);
     else addStation(d, fields);
     setData(d);
-    modal.hidden = true;
+    closeSettingsModal();
     notify();
     render();
   };
+}
+
+function scrollScreensTop() {
+  const screens = document.querySelector('.screens');
+  if (screens) screens.scrollTop = 0;
 }
 
 function readAsDataURL(file, maxSide) {
