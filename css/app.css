@@ -224,7 +224,8 @@ select {
   width: 100%;
   margin: 0;
   box-shadow: 0 8px 24px rgba(13, 159, 143, 0.35);
-  font-size: 1.05rem;
+  font-size: 1.16rem;
+  padding: 13px 15px;
 }
 
 @keyframes fadeIn {
@@ -677,6 +678,128 @@ select {
   font-size: 0.75rem;
   text-transform: none;
   letter-spacing: 0;
+}
+
+/* Главный экран: +10% к шрифтам, полям и промежуткам */
+#screen-refuel .screen-header {
+  margin-bottom: 9px;
+}
+
+#screen-refuel .app-title {
+  font-size: 1.54rem;
+}
+
+#screen-refuel .car-select {
+  font-size: 0.99rem;
+}
+
+#screen-refuel .tank-meta {
+  font-size: 0.86rem;
+}
+
+#screen-refuel .car-thumb {
+  width: 46px;
+  height: 46px;
+}
+
+#screen-refuel .station-logo-lg {
+  width: 37px;
+  height: 37px;
+}
+
+#screen-refuel .dash-form {
+  gap: 9px;
+}
+
+#screen-refuel .field {
+  gap: 5px;
+  font-size: 0.79rem;
+}
+
+#screen-refuel .field input,
+#screen-refuel .field select {
+  padding: 10px 13px;
+  font-size: 1.24rem;
+  border-radius: 10px;
+}
+
+#screen-refuel .field-row {
+  gap: 10px;
+}
+
+#screen-refuel .field-row-odo-date .field input,
+#screen-refuel .field-row-odo-date .date-wrap {
+  min-height: 48px;
+}
+
+#screen-refuel .date-wrap {
+  padding: 10px 13px;
+  border-radius: 10px;
+}
+
+#screen-refuel .date-display,
+#screen-refuel .date-native {
+  font-size: 1.24rem;
+}
+
+#screen-refuel .fill-mode {
+  gap: 8px;
+}
+
+#screen-refuel .fill-mode-option {
+  gap: 8px;
+  padding: 10px;
+  font-size: 1.05rem;
+}
+
+#screen-refuel .field-actual input {
+  font-size: 1.38rem;
+}
+
+#screen-refuel .cost-hint {
+  font-size: 0.77rem;
+}
+
+#screen-refuel .calib-hint {
+  padding: 7px 9px;
+  font-size: 0.83rem;
+}
+
+#screen-refuel .result-block {
+  gap: 10px;
+}
+
+#screen-refuel .result-plan .result-value {
+  font-size: 2.53rem;
+}
+
+#screen-refuel .result-label {
+  font-size: 0.79rem;
+}
+
+#screen-refuel .result-facts {
+  gap: 10px 13px;
+}
+
+#screen-refuel .result-facts .result-cost,
+#screen-refuel .result-facts .field-actual {
+  gap: 5px;
+}
+
+#screen-refuel .result-facts .result-cost .result-label,
+#screen-refuel .result-facts .field-actual > span {
+  font-size: 0.79rem;
+}
+
+#screen-refuel .result-facts .result-value-sm {
+  min-height: 48px;
+  padding: 10px 13px;
+  font-size: 1.38rem;
+  border-radius: 10px;
+}
+
+#screen-refuel .result-facts .field-actual input {
+  min-height: 48px;
 }
 
 .btn-primary,
