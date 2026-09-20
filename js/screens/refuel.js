@@ -432,8 +432,8 @@ function render() {
         </div>
         <div class="result-facts">
           <div class="result-cost">
-            <span class="result-label">Стоимость (факт)</span>
-            <span class="result-value-sm"><span id="result-cost">—</span> <small>₽</small></span>
+            <span class="result-label">Стоимость (факт), ₽</span>
+            <span class="result-value-sm"><span id="result-cost">—</span></span>
           </div>
           <label class="field field-actual">
             <span>Факт залито, л</span>
