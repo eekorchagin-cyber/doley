@@ -355,14 +355,14 @@ select {
 .dash-form {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  font-size: 0.7rem;
+  gap: 4px;
+  font-size: 0.72rem;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -372,9 +372,9 @@ select {
 .field select {
   background: var(--bg-field);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 0.98rem;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 1.13rem;
   text-transform: none;
   letter-spacing: 0;
   color: var(--text);
@@ -391,7 +391,7 @@ select {
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 9px;
 }
 
 .field-optional em {
@@ -405,7 +405,7 @@ select {
 .fill-mode {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 7px;
   margin-bottom: 0;
 }
 
@@ -413,15 +413,15 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 8px;
+  gap: 7px;
+  padding: 9px 9px;
   border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--bg-field);
   cursor: pointer;
   text-transform: none;
   letter-spacing: 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
 }
@@ -437,7 +437,7 @@ select {
 }
 
 .field-actual input {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 600;
   border-color: rgba(13, 159, 143, 0.45);
 }
@@ -506,7 +506,7 @@ select {
   box-shadow: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
 }
 
 .result-plan {
@@ -518,13 +518,13 @@ select {
 }
 
 .result-plan .result-value {
-  font-size: 2.15rem;
+  font-size: 2.3rem;
 }
 
 .result-facts {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px 10px;
+  gap: 9px 12px;
   align-items: end;
 }
 
@@ -542,7 +542,7 @@ select {
 }
 
 .result-facts .result-value-sm {
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   line-height: 1.15;
 }
 
