@@ -225,6 +225,12 @@ function setFormLocked(locked) {
 function renderDock() {
   const dock = document.getElementById('app-dock');
   if (!dock) return;
+  const onRefuel = Boolean(root && !root.hidden);
+  if (!onRefuel) {
+    dock.hidden = true;
+    syncLayout();
+    return;
+  }
   dock.hidden = false;
   dock.classList.toggle('is-saved', awaitingNew);
   if (awaitingNew) {
