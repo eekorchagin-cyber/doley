@@ -5,8 +5,8 @@
  * появлялся даже когда старый SW отдаёт устаревший updates.js из кэша.
  */
 
-export const APP_VERSION = 14;
-export const APP_CACHE = 'doley-static-v14';
+export const APP_VERSION = 15;
+export const APP_CACHE = 'doley-static-v15';
 
 const VERSION_KEY = 'doley:app-version';
 const DISMISS_KEY = 'doley:update-dismissed';
@@ -15,26 +15,40 @@ let registration = null;
 let refreshing = false;
 let remoteVersion = null;
 let remoteCache = APP_CACHE;
+let updateIsStale = false;
 
 function banner() {
   return document.getElementById('update-banner');
 }
 
-export function showUpdateBanner() {
+export function showUpdateBanner(forceStale = false) {
   const el = banner();
   if (!el) return;
+  if (forceStale) updateIsStale = true;
   if (
+    !updateIsStale &&
     remoteVersion != null &&
     Number(sessionStorage.getItem(DISMISS_KEY)) === Number(remoteVersion)
   ) {
     return;
   }
-  // Inline-скрипт в index.html мог уже показать баннер и навесить обработчики
+  if (updateIsStale) sessionStorage.removeItem(DISMISS_KEY);
+
+  const text = el.querySelector('#update-banner-text');
+  const later = el.querySelector('#update-later');
+  if (text) {
+    text.textContent = updateIsStale
+      ? 'Установите обновление «Долей!» — сейчас на телефоне старая версия'
+      : 'Доступно обновление «Долей!»';
+  }
+  if (later) later.hidden = !!updateIsStale;
+
   el.hidden = false;
   window.__doleyUpdateNeeded = true;
 }
 
 export function hideUpdateBanner() {
+  if (updateIsStale) return;
   const el = banner();
   if (el) el.hidden = true;
   if (remoteVersion != null) {
@@ -65,7 +79,6 @@ async function unregisterWorkers() {
 }
 
 async function applyUpdate() {
-  hideUpdateBanner();
   const next = remoteVersion != null ? remoteVersion : APP_VERSION;
   try {
     await unregisterWorkers();
@@ -74,6 +87,7 @@ async function applyUpdate() {
     // ignore
   }
   localStorage.setItem(VERSION_KEY, String(next));
+  sessionStorage.removeItem(DISMISS_KEY);
   const url = new URL(window.location.href);
   url.searchParams.set('v', String(next));
   url.searchParams.set('_', String(Date.now()));
@@ -94,7 +108,7 @@ function watchWorker(worker) {
   if (!worker) return;
   const maybeShow = () => {
     if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-      showUpdateBanner();
+      showUpdateBanner(true);
     }
   };
   worker.addEventListener('statechange', maybeShow);
@@ -135,8 +149,10 @@ async function checkVersionFile() {
     remoteCache = meta.cache;
     const local = storedVersion();
     const stale = await hasStaleCaches(meta.cache);
-    if (meta.version > local || stale) {
-      showUpdateBanner();
+    const needs = meta.version > local || stale;
+    if (needs) {
+      updateIsStale = true;
+      showUpdateBanner(true);
       return;
     }
     if (!localStorage.getItem(VERSION_KEY)) {
@@ -152,7 +168,7 @@ async function checkForUpdates() {
   if (!registration) return;
   try {
     await registration.update();
-    if (registration.waiting) showUpdateBanner();
+    if (registration.waiting) showUpdateBanner(true);
     if (registration.installing) watchWorker(registration.installing);
   } catch {
     // офлайн
@@ -160,7 +176,6 @@ async function checkForUpdates() {
 }
 
 export async function initUpdates() {
-  // Если inline-скрипт уже повесил обработчики — не дублируем
   if (!window.__doleyUpdateBound) {
     window.__doleyUpdateBound = true;
     const el = banner();
@@ -172,7 +187,6 @@ export async function initUpdates() {
     }
   }
 
-  // Экспорт для inline fallback
   window.__doleyApplyUpdate = applyUpdate;
 
   if (!('serviceWorker' in navigator)) {
@@ -191,7 +205,7 @@ export async function initUpdates() {
     return;
   }
 
-  if (registration.waiting) showUpdateBanner();
+  if (registration.waiting) showUpdateBanner(true);
   if (registration.installing) watchWorker(registration.installing);
 
   registration.addEventListener('updatefound', () => {
