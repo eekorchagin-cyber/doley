@@ -4,6 +4,9 @@ import { initHistory, refreshHistory } from './screens/history.js';
 import { initSettings, refreshSettings } from './screens/settings.js';
 import { initUpdates } from './updates.js';
 import { initTheme, applyTheme } from './theme.js';
+import { initLayout } from './layout.js';
+
+initLayout();
 
 let data = loadData();
 
