@@ -67,10 +67,10 @@ function render() {
         <thead>
           <tr>
             <th>Дата</th>
-            <th>Одометр</th>
-            <th>Пробег</th>
-            <th>Топливо</th>
-            <th>Израсх., л</th>
+            <th>Одо</th>
+            <th>Км</th>
+            <th>Топл.</th>
+            <th>Л</th>
             <th>л/100</th>
             <th>₽/км</th>
             <th></th>
