@@ -1,4 +1,4 @@
-const CACHE = 'doley-static-v8';
+const CACHE = 'doley-static-v9';
 const ASSETS = [
   './',
   './index.html',
