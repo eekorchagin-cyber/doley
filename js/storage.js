@@ -37,6 +37,7 @@ function defaultData() {
   };
 }
 
+/** Разовый сид каталога при миграции со старой схемы (не при каждом запуске). */
 function seedMissingNetworks(data) {
   if (!Array.isArray(data.networks)) data.networks = [];
   const names = new Set(data.networks.map((n) => n.name.toLowerCase()));
@@ -54,7 +55,8 @@ function seedMissingNetworks(data) {
 /** v1/v2: stations были и сетями, и точками → разделить */
 function migrateToNetworksAndStations(data) {
   if (Array.isArray(data.networks) && data.schemaVersion >= 3) {
-    seedMissingNetworks(data);
+    // Уже на новой схеме: не подмешиваем DEFAULT_NETWORKS снова —
+    // иначе удалённые пользователем сети возвращаются при каждом запуске.
     if (!Array.isArray(data.stations)) data.stations = [];
     return data;
   }
@@ -72,7 +74,6 @@ function migrateToNetworksAndStations(data) {
   if (onlyPlaceholder) {
     data.networks = createDefaultNetworks(uid);
     data.stations = [];
-    seedMissingNetworks(data);
     return data;
   }
 
@@ -107,6 +108,7 @@ function migrateToNetworksAndStations(data) {
 
   data.networks = networks;
   data.stations = stations;
+  // Один раз при миграции со старых данных — дополнить каталог.
   seedMissingNetworks(data);
 
   // fillups: старый stationId мог указывать на сеть
