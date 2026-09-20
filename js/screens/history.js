@@ -1,11 +1,16 @@
-import { getActiveCar } from '../storage.js';
+import { getActiveCar, stationLabel, getStation } from '../storage.js';
 import { fillupsForCar, deleteFillup, updateFillup, listFuels, listStations } from '../dictionaries.js';
-import { costPerKm, round2 } from '../calc.js';
-import { stationLabel, getStation } from '../storage.js';
+import {
+  costPerKm,
+  round2,
+  actualConsumption,
+  litersUsedForFillup,
+} from '../calc.js';
 
 let root = null;
 let getData = null;
 let setData = null;
+let onChange = null;
 let chart = null;
 
 const FUEL_COLORS = [
@@ -23,11 +28,16 @@ export function initHistory(el, deps) {
   root = el;
   getData = deps.getData;
   setData = deps.setData;
+  onChange = deps.onChange;
   render();
 }
 
 export function refreshHistory() {
   if (root && !root.hidden) render();
+}
+
+function notify() {
+  if (onChange) onChange();
 }
 
 function render() {
@@ -57,11 +67,11 @@ function render() {
         <thead>
           <tr>
             <th>Дата</th>
-            <th>Одометр</th>
-            <th>Пробег</th>
-            <th>Топливо</th>
+            <th>Одо</th>
+            <th>Км</th>
+            <th></th>
+            <th>Л</th>
             <th>л/100</th>
-            <th>₽/км</th>
             <th></th>
           </tr>
         </thead>
@@ -72,9 +82,9 @@ function render() {
             <td>${escapeHtml(formatDate(r.date))}</td>
             <td>${r.odometer}</td>
             <td>${r.distance != null ? r.distance : '—'}</td>
-            <td><span class="fuel-dot" style="background:${r.color}"></span>${escapeHtml(r.fuelName)}</td>
-            <td>${r.consumption}</td>
-            <td>${r.perKm != null ? r.perKm : '—'}</td>
+            <td title="${escapeAttr(r.fuelName)}"><span class="fuel-dot" style="background:${r.color}"></span></td>
+            <td>${r.litersUsed != null ? formatNum(r.litersUsed) : '—'}</td>
+            <td>${r.actualCons != null ? formatNum(r.actualCons) : '—'}</td>
             <td class="row-actions">
               <button type="button" class="btn-icon" data-edit="${r.id}" title="Изменить">✎</button>
               <button type="button" class="btn-icon danger" data-del="${r.id}" title="Удалить">×</button>
@@ -87,16 +97,15 @@ function render() {
           : `<p class="empty-state">Пока нет сохранённых заправок</p>`
       }
     </section>
-
-    <div id="edit-modal" class="modal" hidden></div>
   `;
 
   root.querySelectorAll('[data-del]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      if (!confirm('Удалить заправку?')) return;
+      if (!confirm('Удалить эту заправку из истории?')) return;
       const d = getData();
       deleteFillup(d, btn.getAttribute('data-del'));
       setData(d);
+      notify();
       render();
     });
   });
@@ -109,7 +118,9 @@ function render() {
 }
 
 function buildRows(data, carId) {
-  const fuelMap = Object.fromEntries(data.fuels.map((f, i) => [f.id, { ...f, color: FUEL_COLORS[i % FUEL_COLORS.length] }]));
+  const fuelMap = Object.fromEntries(
+    data.fuels.map((f, i) => [f.id, { ...f, color: FUEL_COLORS[i % FUEL_COLORS.length] }])
+  );
   const sorted = fillupsForCar(data, carId)
     .slice()
     .sort((a, b) => a.odometer - b.odometer || String(a.date).localeCompare(String(b.date)));
@@ -117,20 +128,31 @@ function buildRows(data, carId) {
   const withDist = sorted.map((f, i) => {
     const prev = i > 0 ? sorted[i - 1] : null;
     const distance = prev ? f.odometer - prev.odometer : null;
-    const liters = f.litersActual != null ? f.litersActual : f.litersToFull;
+    const validDistance = distance != null && distance > 0 ? distance : null;
+    const liters = litersUsedForFillup(f);
+    const litersUsed = validDistance != null && liters != null && liters > 0 ? liters : null;
     const cost = f.cost;
     const fuel = fuelMap[f.fuelId] || { name: '?', color: '#888' };
     return {
       ...f,
-      distance: distance != null && distance > 0 ? distance : null,
-      perKm: distance != null && distance > 0 ? costPerKm(cost, distance) : null,
+      distance: validDistance,
+      liters,
+      litersUsed,
+      actualCons: actualConsumption(litersUsed, validDistance),
+      perKm: validDistance != null ? costPerKm(cost, validDistance) : null,
       fuelName: fuel.name,
       color: fuel.color,
-      liters,
     };
   });
 
   return withDist.slice().reverse();
+}
+
+function formatNum(n) {
+  return Number(n).toLocaleString('ru-RU', {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 0,
+  });
 }
 
 function drawChart(data, carId, rows) {
@@ -164,7 +186,6 @@ function drawChart(data, carId, rows) {
     data.fuels.map((f, i) => [f.id, { name: f.name, color: FUEL_COLORS[i % FUEL_COLORS.length] }])
   );
 
-  // Stacked by fuel per month for mixed-fuel months highlight
   const mixedFlags = labels.map((m) => months[m].fuels.size > 1);
 
   const datasets = fuelIds.map((fid) => {
@@ -221,7 +242,6 @@ function drawChart(data, carId, rows) {
     },
   });
 
-  // Highlight mixed months on legend
   legend.innerHTML = `
     <div class="legend-fuels">
       ${fuelIds
@@ -238,7 +258,6 @@ function drawChart(data, carId, rows) {
     }
   `;
 
-  // Tint x-axis labels for mixed months via plugin-like afterDraw — add CSS markers
   const mixedList = labels.filter((_, i) => mixedFlags[i]).map(formatMonth);
   if (mixedList.length) {
     legend.innerHTML += `<p class="mixed-months">Смешанные периоды: <strong>${mixedList
@@ -247,11 +266,30 @@ function drawChart(data, carId, rows) {
   }
 }
 
+function getEditModalHost() {
+  let modal = document.getElementById('history-modal-root');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'history-modal-root';
+    modal.className = 'modal';
+    modal.hidden = true;
+    document.body.appendChild(modal);
+  }
+  return modal;
+}
+
+function closeEditModal() {
+  const modal = document.getElementById('history-modal-root');
+  if (!modal) return;
+  modal.hidden = true;
+  modal.innerHTML = '';
+}
+
 function openEdit(id) {
   const data = getData();
   const fillup = data.fillups.find((f) => f.id === id);
   if (!fillup) return;
-  const modal = root.querySelector('#edit-modal');
+  const modal = getEditModalHost();
   modal.hidden = false;
   modal.innerHTML = `
     <div class="modal-card">
@@ -259,7 +297,7 @@ function openEdit(id) {
       <label class="field"><span>Дата</span><input id="e-date" type="date" value="${escapeAttr(fillup.date)}"></label>
       <label class="field"><span>Одометр</span><input id="e-odo" type="number" value="${fillup.odometer}"></label>
       <label class="field"><span>До пустого</span><input id="e-range" type="number" value="${fillup.rangeKm}"></label>
-      <label class="field"><span>Расход</span><input id="e-cons" type="number" step="0.1" value="${fillup.consumption}"></label>
+      <label class="field"><span>Расход (бортовой)</span><input id="e-cons" type="number" step="0.1" value="${fillup.consumption}"></label>
       <label class="field"><span>Топливо</span>
         <select id="e-fuel">${listFuels(data)
           .map((f) => `<option value="${f.id}" ${f.id === fillup.fuelId ? 'selected' : ''}>${escapeHtml(f.name)}</option>`)
@@ -281,13 +319,21 @@ function openEdit(id) {
         <button type="button" class="btn-secondary" id="e-cancel">Отмена</button>
         <button type="button" class="btn-primary" id="e-save">Сохранить</button>
       </div>
+      <button type="button" class="btn-danger-block" id="e-delete">Удалить заправку</button>
     </div>
   `;
-  modal.querySelector('#e-cancel').onclick = () => {
-    modal.hidden = true;
-  };
+  modal.querySelector('#e-cancel').onclick = () => closeEditModal();
   modal.onclick = (e) => {
-    if (e.target === modal) modal.hidden = true;
+    if (e.target === modal) closeEditModal();
+  };
+  modal.querySelector('#e-delete').onclick = () => {
+    if (!confirm('Удалить эту заправку из истории?')) return;
+    const d = getData();
+    deleteFillup(d, id);
+    setData(d);
+    closeEditModal();
+    notify();
+    render();
   };
   modal.querySelector('#e-save').onclick = () => {
     const d = getData();
@@ -305,7 +351,8 @@ function openEdit(id) {
       litersActual: modal.querySelector('#e-actual').value,
     });
     setData(d);
-    modal.hidden = true;
+    closeEditModal();
+    notify();
     render();
   };
 }
