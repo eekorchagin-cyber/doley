@@ -176,6 +176,12 @@ function pickRemembered(...values) {
   return '';
 }
 
+function formatDateDisplay(iso) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
 function prepareNewFillup() {
   setAwaitingNew(false);
   const data = getData();
@@ -303,7 +309,7 @@ function render() {
     </header>
 
     <form id="refuel-form" class="dash-form" autocomplete="off">
-      <div class="field-row">
+      <div class="field-row field-row-odo-date">
         <label class="field">
           <span>Одометр, км</span>
           <input id="odo" inputmode="numeric" type="number" step="1" min="0" value="${escapeAttr(
@@ -312,7 +318,14 @@ function render() {
         </label>
         <label class="field">
           <span>Дата</span>
-          <input id="date" type="date" value="${escapeAttr(defaults.date)}" required>
+          <div class="date-wrap">
+            <span class="date-display" id="date-display">${escapeHtml(
+              formatDateDisplay(defaults.date)
+            )}</span>
+            <input id="date" class="date-native" type="date" value="${escapeAttr(
+              defaults.date
+            )}" required aria-label="Дата">
+          </div>
         </label>
       </div>
 
@@ -446,6 +459,16 @@ function render() {
   });
 
   const form = root.querySelector('#refuel-form');
+  const dateInput = root.querySelector('#date');
+  const dateDisplay = root.querySelector('#date-display');
+  const syncDateDisplay = () => {
+    if (dateDisplay && dateInput) {
+      dateDisplay.textContent = formatDateDisplay(dateInput.value) || 'ДД.ММ.ГГГГ';
+    }
+  };
+  dateInput?.addEventListener('input', syncDateDisplay);
+  dateInput?.addEventListener('change', syncDateDisplay);
+
   root.querySelector('#network')?.addEventListener('change', () => {
     refillStations();
     syncNetworkLogo();
