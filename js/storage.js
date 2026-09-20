@@ -33,6 +33,7 @@ function defaultData() {
     stations: [],
     fillups: [],
     lastInputs: {},
+    theme: 'system',
   };
 }
 
@@ -142,6 +143,9 @@ function migrate(data) {
   if (!Array.isArray(next.fuels)) next.fuels = defaultData().fuels;
   if (!Array.isArray(next.fillups)) next.fillups = [];
   if (!next.lastInputs || typeof next.lastInputs !== 'object') next.lastInputs = {};
+  if (next.theme !== 'light' && next.theme !== 'dark' && next.theme !== 'system') {
+    next.theme = 'system';
+  }
 
   migrateToNetworksAndStations(next);
   next.schemaVersion = SCHEMA_VERSION;

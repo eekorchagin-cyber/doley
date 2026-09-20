@@ -3,6 +3,7 @@ import { initRefuel, refreshRefuel } from './screens/refuel.js';
 import { initHistory, refreshHistory } from './screens/history.js';
 import { initSettings, refreshSettings } from './screens/settings.js';
 import { initUpdates } from './updates.js';
+import { initTheme, applyTheme } from './theme.js';
 
 let data = loadData();
 
@@ -25,7 +26,20 @@ const deps = {
     refreshRefuel();
     refreshHistory();
   },
+  setTheme: (theme) => {
+    data.theme = theme;
+    saveData(data);
+    applyTheme(theme);
+  },
 };
+
+initTheme(
+  () => data.theme,
+  () => {
+    refreshSettings();
+    refreshHistory();
+  }
+);
 
 initRefuel(screens.refuel, deps);
 initHistory(screens.history, deps);

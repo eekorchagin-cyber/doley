@@ -13,6 +13,30 @@
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="./assets/icon-512.png">
   <title>Долей!</title>
+  <script>
+    (function () {
+      try {
+        var pref = 'system';
+        var raw = localStorage.getItem('doley:v1');
+        if (raw) {
+          var data = JSON.parse(raw);
+          if (data && (data.theme === 'light' || data.theme === 'dark' || data.theme === 'system')) {
+            pref = data.theme;
+          }
+        }
+        var dark =
+          pref === 'dark' ||
+          (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        document.documentElement.dataset.themePref = pref;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = dark ? '#0f1419' : '#e8eef6';
+      } catch (e) {
+        document.documentElement.dataset.theme = 'light';
+        document.documentElement.dataset.themePref = 'system';
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
