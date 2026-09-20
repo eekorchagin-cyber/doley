@@ -69,10 +69,9 @@ function render() {
             <th>Дата</th>
             <th>Одо</th>
             <th>Км</th>
-            <th>Топл.</th>
+            <th></th>
             <th>Л</th>
             <th>л/100</th>
-            <th>₽/км</th>
             <th></th>
           </tr>
         </thead>
@@ -83,10 +82,9 @@ function render() {
             <td>${escapeHtml(formatDate(r.date))}</td>
             <td>${r.odometer}</td>
             <td>${r.distance != null ? r.distance : '—'}</td>
-            <td><span class="fuel-dot" style="background:${r.color}"></span>${escapeHtml(r.fuelName)}</td>
+            <td title="${escapeAttr(r.fuelName)}"><span class="fuel-dot" style="background:${r.color}"></span></td>
             <td>${r.litersUsed != null ? formatNum(r.litersUsed) : '—'}</td>
             <td>${r.actualCons != null ? formatNum(r.actualCons) : '—'}</td>
-            <td>${r.perKm != null ? r.perKm : '—'}</td>
             <td class="row-actions">
               <button type="button" class="btn-icon" data-edit="${r.id}" title="Изменить">✎</button>
               <button type="button" class="btn-icon danger" data-del="${r.id}" title="Удалить">×</button>

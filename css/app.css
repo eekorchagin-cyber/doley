@@ -782,6 +782,13 @@ select {
   font-weight: 600;
 }
 
+.history-table th:nth-child(4),
+.history-table td:nth-child(4) {
+  width: 16px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
 .fuel-dot {
   display: inline-block;
   width: 8px;
