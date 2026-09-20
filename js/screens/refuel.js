@@ -135,7 +135,7 @@ function recalc() {
 
   if (planBlock) {
     planBlock.hidden = !form.fullTank;
-    planBlock.parentElement?.classList.toggle('result-cost-only', !form.fullTank);
+    planBlock.closest('.result-block')?.classList.toggle('result-cost-only', !form.fullTank);
   }
   if (litersEl) litersEl.textContent = formatNum(planned.litersToFull);
   if (costEl) costEl.textContent = cost != null ? formatNum(cost) : '—';
@@ -404,23 +404,24 @@ function render() {
 
       <p id="calib-hint" class="calib-hint" hidden></p>
 
-      <div class="result-block result-row" aria-live="polite">
-        <div class="result-main" id="plan-block">
+      <div class="result-block" aria-live="polite">
+        <div class="result-plan" id="plan-block">
           <span class="result-label" id="plan-label">План к заправке</span>
           <span class="result-value"><span id="result-liters">0</span> <small>л</small></span>
         </div>
-        <div class="result-cost">
-          <span class="result-label">Стоимость (факт)</span>
-          <span class="result-value-sm"><span id="result-cost">—</span> <small>₽</small></span>
+        <div class="result-facts">
+          <div class="result-cost">
+            <span class="result-label">Стоимость (факт)</span>
+            <span class="result-value-sm"><span id="result-cost">—</span> <small>₽</small></span>
+          </div>
+          <label class="field field-actual">
+            <span>Факт залито, л</span>
+            <input id="liters-actual" inputmode="decimal" type="number" step="0.01" min="0.01" value="${escapeAttr(
+              defaults.litersActual
+            )}" placeholder="сколько залили" required>
+          </label>
         </div>
       </div>
-
-      <label class="field field-actual">
-        <span>Факт залито, л</span>
-        <input id="liters-actual" inputmode="decimal" type="number" step="0.01" min="0.01" value="${escapeAttr(
-          defaults.litersActual
-        )}" placeholder="сколько залили" required>
-      </label>
       <p id="cost-hint" class="cost-hint">Стоимость = факт залитых литров × цена за литр</p>
 
       <div class="form-spacer" aria-hidden="true"></div>
