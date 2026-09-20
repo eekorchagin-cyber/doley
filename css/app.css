@@ -332,10 +332,85 @@ select {
   font-size: 0.7rem;
 }
 
-.field-actual input {
-  font-size: 1.25rem;
+.fill-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.fill-mode-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-field);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.9rem;
   font-weight: 600;
-  border-color: rgba(13, 159, 143, 0.45);
+  color: var(--text);
+}
+
+.fill-mode-option:has(input:checked) {
+  border-color: rgba(13, 159, 143, 0.55);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.fill-mode-option input {
+  accent-color: var(--accent);
+}
+
+.field-dimmed {
+  opacity: 0.55;
+}
+
+.result-block.result-cost-only {
+  grid-template-columns: 1fr;
+}
+
+.result-block.result-cost-only .result-main[hidden] {
+  display: none !important;
+}
+
+.partial-tag {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(196, 125, 0, 0.15);
+  color: var(--warn);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.history-row.is-partial td {
+  color: var(--muted);
+}
+
+.field-check {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.check-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
 }
 
 .cost-hint {

@@ -136,6 +136,7 @@ export function addFillup(data, fields) {
       fields.litersActual != null && fields.litersActual !== ''
         ? Number(fields.litersActual)
         : null,
+    fullTank: fields.fullTank !== false,
   };
   data.fillups.push(fillup);
   saveData(data);
@@ -162,6 +163,8 @@ export function updateFillup(data, id, fields) {
           ? null
           : fillup.litersActual
         : Number(fields.litersActual),
+    fullTank:
+      fields.fullTank !== undefined ? fields.fullTank !== false : fillup.fullTank !== false,
   });
   saveData(data);
   return fillup;

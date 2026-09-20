@@ -3,8 +3,8 @@ import { fillupsForCar, deleteFillup, updateFillup, listFuels, listStations } fr
 import {
   costPerKm,
   round2,
-  actualConsumption,
-  litersUsedForFillup,
+  buildFillupAnalytics,
+  isFullTank,
 } from '../calc.js';
 
 let root = null;
@@ -93,8 +93,10 @@ function render() {
           <tbody>
             ${rows
               .map(
-                (r) => `<tr class="history-row" data-id="${r.id}" tabindex="0">
-              <td>${escapeHtml(formatDate(r.date))}</td>
+                (r) => `<tr class="history-row ${r.fullTank ? '' : 'is-partial'}" data-id="${r.id}" tabindex="0">
+              <td>${escapeHtml(formatDate(r.date))}${
+                  r.fullTank ? '' : ' <span class="partial-tag" title="Неполный бак">½</span>'
+                }</td>
               <td>${r.odometer}</td>
               <td>${r.distance != null ? r.distance : '—'}</td>
               <td title="${escapeAttr(r.fuelName)}"><span class="fuel-dot" style="background:${r.color}"></span></td>
@@ -109,7 +111,7 @@ function render() {
         }
       </section>
     </div>
-    <p class="history-hint">Удерживайте строку, чтобы изменить или удалить заправку</p>
+    <p class="history-hint">Удерживайте строку, чтобы изменить или удалить. «½» — неполный бак (литры учтутся при следующей полной).</p>
   `;
 
   bindRowLongPress();
@@ -182,7 +184,9 @@ function openRowMenu(id) {
   modal.hidden = false;
   modal.innerHTML = `
     <div class="modal-card action-sheet" role="menu">
-      <p class="action-sheet-title">${escapeHtml(formatDate(fillup.date))} · ${fillup.odometer} км</p>
+      <p class="action-sheet-title">${escapeHtml(formatDate(fillup.date))} · ${fillup.odometer} км${
+        isFullTank(fillup) ? '' : ' · неполный'
+      }</p>
       <button type="button" class="action-sheet-btn" id="m-edit">Редактировать</button>
       <button type="button" class="action-sheet-btn danger" id="m-del">Удалить</button>
       <button type="button" class="action-sheet-btn cancel" id="m-cancel">Отмена</button>
@@ -216,21 +220,22 @@ function buildRows(data, carId) {
     .slice()
     .sort((a, b) => a.odometer - b.odometer || String(a.date).localeCompare(String(b.date)));
 
-  const withDist = sorted.map((f, i) => {
-    const prev = i > 0 ? sorted[i - 1] : null;
-    const distance = prev ? f.odometer - prev.odometer : null;
-    const validDistance = distance != null && distance > 0 ? distance : null;
-    const liters = litersUsedForFillup(f);
-    const litersUsed = validDistance != null && liters != null && liters > 0 ? liters : null;
-    const cost = f.cost;
+  const analytics = buildFillupAnalytics(sorted);
+
+  const withDist = analytics.map((m) => {
+    const f = m.fillup;
     const fuel = fuelMap[f.fuelId] || { name: '?', color: '#888' };
+    const cost = f.cost;
+    const distForCost = m.fullTank ? m.segmentDistance : m.distance;
     return {
       ...f,
-      distance: validDistance,
-      liters,
-      litersUsed,
-      actualCons: actualConsumption(litersUsed, validDistance),
-      perKm: validDistance != null ? costPerKm(cost, validDistance) : null,
+      fullTank: m.fullTank,
+      distance: m.fullTank && m.segmentDistance != null ? m.segmentDistance : m.distance,
+      liters: m.litersFilled,
+      litersFilled: m.litersFilled,
+      litersUsed: m.litersUsed,
+      actualCons: m.actualCons,
+      perKm: distForCost != null ? costPerKm(cost, distForCost) : null,
       fuelName: fuel.name,
       color: fuel.color,
     };
@@ -406,6 +411,12 @@ function openEdit(id) {
       <label class="field"><span>К заправке, л</span><input id="e-liters" type="number" step="0.01" value="${fillup.litersToFull}"></label>
       <label class="field"><span>Стоимость</span><input id="e-cost" type="number" step="0.01" value="${fillup.cost}"></label>
       <label class="field"><span>Факт залито</span><input id="e-actual" type="number" step="0.01" value="${fillup.litersActual ?? ''}"></label>
+      <label class="field field-check">
+        <span class="check-row">
+          <input type="checkbox" id="e-full" ${isFullTank(fillup) ? 'checked' : ''}>
+          Заправка до полного бака
+        </span>
+      </label>
       <div class="modal-actions">
         <button type="button" class="btn-secondary" id="e-cancel">Отмена</button>
         <button type="button" class="btn-primary" id="e-save">Сохранить</button>
@@ -430,6 +441,7 @@ function openEdit(id) {
       litersToFull: modal.querySelector('#e-liters').value,
       cost: modal.querySelector('#e-cost').value,
       litersActual: modal.querySelector('#e-actual').value,
+      fullTank: modal.querySelector('#e-full').checked,
     });
     setData(d);
     closeEditModal();

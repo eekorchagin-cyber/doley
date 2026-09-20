@@ -53,6 +53,7 @@ function readForm() {
     price: root.querySelector('#price').value,
     date: root.querySelector('#date').value,
     litersActual: root.querySelector('#liters-actual')?.value ?? '',
+    fullTank: root.querySelector('#fill-mode-full')?.checked !== false,
   };
 }
 
@@ -108,12 +109,25 @@ function recalc() {
   const costEl = root.querySelector('#result-cost');
   const hintEl = root.querySelector('#calib-hint');
   const costHint = root.querySelector('#cost-hint');
+  const planBlock = root.querySelector('#plan-block');
+  const planLabel = root.querySelector('#plan-label');
 
+  if (planBlock) {
+    planBlock.hidden = !form.fullTank;
+    planBlock.parentElement?.classList.toggle('result-cost-only', !form.fullTank);
+  }
   if (litersEl) litersEl.textContent = formatNum(planned.litersToFull);
   if (costEl) costEl.textContent = cost != null ? formatNum(cost) : '—';
   if (costHint) {
     costHint.hidden = !(form.litersActual === '' || form.litersActual == null);
   }
+
+  const rangeInput = root.querySelector('#range');
+  if (rangeInput) {
+    rangeInput.required = form.fullTank;
+    rangeInput.closest('.field')?.classList.toggle('field-dimmed', !form.fullTank);
+  }
+
   if (hintEl) {
     if (calib.sampleCount > 0) {
       hintEl.textContent = `Коррекция k=${calib.k}${
@@ -210,6 +224,7 @@ function render() {
     price: pickRemembered(last?.price, lastFill?.price),
     date: todayISO(),
     litersActual: awaitingNew ? '' : pickRemembered(last?.litersActual),
+    fullTank: last?.fullTank !== false,
   };
 
   const selectedNetwork = getNetwork(data, defaults.networkId) || data.networks[0];
@@ -287,12 +302,34 @@ function render() {
         </div>
       </label>
 
+      <div class="fill-mode" role="group" aria-label="Тип заправки">
+        <label class="fill-mode-option">
+          <input type="radio" name="fill-mode" id="fill-mode-full" value="full" ${
+            defaults.fullTank ? 'checked' : ''
+          }>
+          <span>До полного</span>
+        </label>
+        <label class="fill-mode-option">
+          <input type="radio" name="fill-mode" id="fill-mode-partial" value="partial" ${
+            defaults.fullTank ? '' : 'checked'
+          }>
+          <span>Неполный бак</span>
+        </label>
+      </div>
+      <p id="fill-mode-hint" class="cost-hint">
+        ${
+          defaults.fullTank
+            ? 'Расход л/100 считается между заправками до полного бака; частичные литры между ними учитываются.'
+            : 'Частичная заправка учитывается в сумме литров до следующей полной.'
+        }
+      </p>
+
       <div class="field-row">
         <label class="field">
           <span>До пустого, км</span>
           <input id="range" inputmode="decimal" type="number" step="1" min="0" value="${escapeAttr(
             defaults.rangeKm
-          )}" required>
+          )}" ${defaults.fullTank ? 'required' : ''}>
         </label>
         <label class="field">
           <span>Расход, л/100</span>
@@ -327,8 +364,8 @@ function render() {
       <p id="calib-hint" class="calib-hint" hidden></p>
 
       <div class="result-block result-row" aria-live="polite">
-        <div class="result-main">
-          <span class="result-label">План к заправке</span>
+        <div class="result-main" id="plan-block">
+          <span class="result-label" id="plan-label">План к заправке</span>
           <span class="result-value"><span id="result-liters">0</span> <small>л</small></span>
         </div>
         <div class="result-cost">
@@ -379,6 +416,20 @@ function render() {
     prepareNewFillup();
   });
 
+  root.querySelectorAll('input[name="fill-mode"]').forEach((el) => {
+    el.addEventListener('change', () => {
+      const hint = root.querySelector('#fill-mode-hint');
+      const full = root.querySelector('#fill-mode-full')?.checked;
+      if (hint) {
+        hint.textContent = full
+          ? 'Расход л/100 считается между заправками до полного бака; частичные литры между ними учитываются.'
+          : 'Частичная заправка учитывается в сумме литров до следующей полной.';
+      }
+      recalc();
+      persistInputs();
+    });
+  });
+
   form.addEventListener('input', () => {
     if (awaitingNew) return;
     recalc();
@@ -408,13 +459,15 @@ function render() {
     }
 
     const calib = computeCalibration(d.fillups, active.id);
-    const planned = calcFill(
-      active.tankCapacity,
-      formData.consumption,
-      formData.rangeKm,
-      formData.price,
-      calib.k
-    );
+    const planned = formData.fullTank
+      ? calcFill(
+          active.tankCapacity,
+          formData.consumption,
+          formData.rangeKm,
+          formData.price,
+          calib.k
+        )
+      : { litersToFull: 0 };
     const cost = calcCost(formData.litersActual, formData.price);
 
     const payload = {
@@ -430,6 +483,7 @@ function render() {
       litersToFull: planned.litersToFull,
       cost: cost ?? 0,
       litersActual: formData.litersActual,
+      fullTank: formData.fullTank,
     };
 
     const added = addFillup(d, payload);
