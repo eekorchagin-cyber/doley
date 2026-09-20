@@ -78,3 +78,24 @@ export function costPerKm(cost, distanceKm) {
   if (!distanceKm || distanceKm <= 0) return null;
   return round2(cost / distanceKm);
 }
+
+/**
+ * Фактический расход между заправками:
+ * liters * 100 / (odoCurr - odoPrev)
+ */
+export function actualConsumption(liters, distanceKm) {
+  const L = Number(liters);
+  const D = Number(distanceKm);
+  if (!(L > 0) || !(D > 0)) return null;
+  return round2(L / (D / 100));
+}
+
+/** Литры, принятые за израсходованные с прошлой заправки */
+export function litersUsedForFillup(fillup) {
+  if (!fillup) return null;
+  if (fillup.litersActual != null && fillup.litersActual !== '') {
+    return Number(fillup.litersActual);
+  }
+  const estimated = Number(fillup.litersToFull);
+  return Number.isFinite(estimated) ? estimated : null;
+}
