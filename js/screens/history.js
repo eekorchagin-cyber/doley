@@ -30,10 +30,25 @@ export function initHistory(el, deps) {
   setData = deps.setData;
   onChange = deps.onChange;
   render();
+  bindOrientationRefresh();
 }
 
 export function refreshHistory() {
   if (root && !root.hidden) render();
+}
+
+function bindOrientationRefresh() {
+  if (window.__doleyHistoryOrientBound) return;
+  window.__doleyHistoryOrientBound = true;
+  let timer = 0;
+  const schedule = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (root && !root.hidden) render();
+    }, 180);
+  };
+  window.addEventListener('orientationchange', schedule);
+  window.addEventListener('resize', schedule);
 }
 
 function notify() {
@@ -46,57 +61,59 @@ function render() {
   const rows = buildRows(data, car.id);
 
   root.innerHTML = `
-    <header class="screen-header">
+    <header class="screen-header history-header">
       <h2 class="section-title">История</h2>
       <p class="section-sub">${escapeHtml(car.name)}</p>
     </header>
 
-    <section class="chart-section">
-      <h3 class="block-title">Расход по месяцам</h3>
-      <div class="chart-wrap">
-        <canvas id="fuel-chart" height="180"></canvas>
-      </div>
-      <div id="chart-legend" class="chart-legend"></div>
-    </section>
+    <div class="history-layout">
+      <section class="chart-section">
+        <h3 class="block-title">Расход по месяцам</h3>
+        <div class="chart-wrap">
+          <canvas id="fuel-chart" height="180"></canvas>
+        </div>
+        <div id="chart-legend" class="chart-legend"></div>
+      </section>
 
-    <section class="table-section">
-      <h3 class="block-title">Заправки</h3>
-      ${
-        rows.length
-          ? `<div class="table-scroll"><table class="history-table">
-        <thead>
-          <tr>
-            <th>Дата</th>
-            <th>Одо</th>
-            <th>Км</th>
-            <th></th>
-            <th>Л</th>
-            <th>л/100</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map(
-              (r) => `<tr data-id="${r.id}">
-            <td>${escapeHtml(formatDate(r.date))}</td>
-            <td>${r.odometer}</td>
-            <td>${r.distance != null ? r.distance : '—'}</td>
-            <td title="${escapeAttr(r.fuelName)}"><span class="fuel-dot" style="background:${r.color}"></span></td>
-            <td>${r.litersUsed != null ? formatNum(r.litersUsed) : '—'}</td>
-            <td>${r.actualCons != null ? formatNum(r.actualCons) : '—'}</td>
-            <td class="row-actions">
-              <button type="button" class="btn-icon" data-edit="${r.id}" title="Изменить">✎</button>
-              <button type="button" class="btn-icon danger" data-del="${r.id}" title="Удалить">×</button>
-            </td>
-          </tr>`
-            )
-            .join('')}
-        </tbody>
-      </table></div>`
-          : `<p class="empty-state">Пока нет сохранённых заправок</p>`
-      }
-    </section>
+      <section class="table-section">
+        <h3 class="block-title">Заправки</h3>
+        ${
+          rows.length
+            ? `<div class="table-scroll"><table class="history-table">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th><span class="th-short">Одо</span><span class="th-full">Одометр</span></th>
+              <th><span class="th-short">Км</span><span class="th-full">Пробег</span></th>
+              <th></th>
+              <th><span class="th-short">Л</span><span class="th-full">Израсх., л</span></th>
+              <th>л/100</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows
+              .map(
+                (r) => `<tr data-id="${r.id}">
+              <td>${escapeHtml(formatDate(r.date))}</td>
+              <td>${r.odometer}</td>
+              <td>${r.distance != null ? r.distance : '—'}</td>
+              <td title="${escapeAttr(r.fuelName)}"><span class="fuel-dot" style="background:${r.color}"></span></td>
+              <td>${r.litersUsed != null ? formatNum(r.litersUsed) : '—'}</td>
+              <td>${r.actualCons != null ? formatNum(r.actualCons) : '—'}</td>
+              <td class="row-actions">
+                <button type="button" class="btn-icon" data-edit="${r.id}" title="Изменить">✎</button>
+                <button type="button" class="btn-icon danger" data-del="${r.id}" title="Удалить">×</button>
+              </td>
+            </tr>`
+              )
+              .join('')}
+          </tbody>
+        </table></div>`
+            : `<p class="empty-state">Пока нет сохранённых заправок</p>`
+        }
+      </section>
+    </div>
   `;
 
   root.querySelectorAll('[data-del]').forEach((btn) => {
