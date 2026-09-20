@@ -763,12 +763,6 @@ select {
   opacity: 0.7;
 }
 
-#screen-refuel .result-facts .field-actual > span {
-  font-size: 0.72rem;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
 #screen-refuel .cost-hint {
   font-size: 0.77rem;
 }
@@ -801,7 +795,9 @@ select {
 
 #screen-refuel .result-facts .result-cost .result-label,
 #screen-refuel .result-facts .field-actual > span {
-  font-size: 0.79rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 #screen-refuel .result-facts .result-value-sm {
