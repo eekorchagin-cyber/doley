@@ -227,16 +227,16 @@ function drawChart(data, carId, rows) {
         x: {
           stacked: true,
           ticks: {
-            color: (ctx) => (mixedFlags[ctx.index] ? '#c47d00' : '#6b7a90'),
+            color: (ctx) => (mixedFlags[ctx.index] ? '#c47d00' : getChartTick()),
             font: { size: 11 },
           },
           grid: { display: false },
         },
         y: {
           stacked: true,
-          ticks: { color: '#6b7a90' },
-          grid: { color: 'rgba(15, 35, 60, 0.08)' },
-          title: { display: true, text: 'литры', color: '#6b7a90' },
+          ticks: { color: getChartTick() },
+          grid: { color: getChartGrid() },
+          title: { display: true, text: 'литры', color: getChartTick() },
         },
       },
     },
@@ -367,6 +367,14 @@ function formatMonth(ym) {
   const [y, m] = ym.split('-');
   const names = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
   return `${names[Number(m) - 1]} ${y.slice(2)}`;
+}
+
+function getChartTick() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--chart-tick').trim() || '#6b7a90';
+}
+
+function getChartGrid() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(15, 35, 60, 0.08)';
 }
 
 function escapeHtml(s) {

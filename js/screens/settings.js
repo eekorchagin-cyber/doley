@@ -25,11 +25,13 @@ import {
   listNetworks,
   listStations,
 } from '../dictionaries.js';
+import { THEME_OPTIONS, normalizeTheme } from '../theme.js';
 
 let root = null;
 let getData = null;
 let setData = null;
 let onChange = null;
+let setTheme = null;
 let tab = 'main';
 /** @type {null | 'cars' | 'fuels' | 'networks' | 'stations'} */
 let dictView = null;
@@ -46,6 +48,7 @@ export function initSettings(el, deps) {
   getData = deps.getData;
   setData = deps.setData;
   onChange = deps.onChange;
+  setTheme = deps.setTheme;
   render();
 }
 
@@ -85,6 +88,7 @@ function render() {
 
 function renderMain(data) {
   const car = getActiveCar(data);
+  const theme = normalizeTheme(data.theme);
   return `
     <section class="settings-block">
       <h3 class="block-title">Активный автомобиль</h3>
@@ -99,6 +103,19 @@ function renderMain(data) {
             .join('')}
         </select>
       </label>
+    </section>
+
+    <section class="settings-block">
+      <h3 class="block-title">Тема оформления</h3>
+      <div class="theme-picker" role="radiogroup" aria-label="Тема оформления">
+        ${THEME_OPTIONS.map(
+          (opt) =>
+            `<button type="button" class="theme-opt ${theme === opt.id ? 'active' : ''}" data-theme-opt="${opt.id}" role="radio" aria-checked="${
+              theme === opt.id ? 'true' : 'false'
+            }">${opt.label}</button>`
+        ).join('')}
+      </div>
+      <p class="hint">«Авто» подстраивается под тему, установленную на телефоне.</p>
     </section>
 
     <section class="settings-block">
@@ -269,6 +286,19 @@ function bindMain() {
       notify();
     });
   }
+
+  root.querySelectorAll('[data-theme-opt]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const theme = btn.getAttribute('data-theme-opt');
+      if (setTheme) setTheme(theme);
+      else {
+        const d = getData();
+        d.theme = theme;
+        setData(d);
+      }
+      render();
+    });
+  });
 
   const exp = root.querySelector('#btn-export');
   if (exp) {
