@@ -1,7 +1,9 @@
 import { saveData, uid } from './storage.js';
 
 export function listFuels(data) {
-  return data.fuels;
+  return [...data.fuels].sort((a, b) =>
+    String(a.name || '').localeCompare(String(b.name || ''), 'ru', { sensitivity: 'base' })
+  );
 }
 
 export function addFuel(data, name) {
@@ -29,7 +31,9 @@ export function deleteFuel(data, id) {
 }
 
 export function listNetworks(data) {
-  return data.networks;
+  return [...data.networks].sort((a, b) =>
+    String(a.name || '').localeCompare(String(b.name || ''), 'ru', { sensitivity: 'base' })
+  );
 }
 
 export function addNetwork(data, fields) {

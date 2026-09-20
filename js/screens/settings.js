@@ -575,6 +575,7 @@ function openNetworkForm(id) {
 function openStationForm(id) {
   const data = getData();
   const station = id ? data.stations.find((s) => s.id === id) : null;
+  const networks = listNetworks(data);
   const modal = getSettingsModalHost();
   modal.hidden = false;
   modal.innerHTML = `
@@ -582,11 +583,11 @@ function openStationForm(id) {
       <h3>${station ? 'Заправка' : 'Новая заправка'}</h3>
       <label class="field"><span>Сеть</span>
         <select id="st-net">
-          ${listNetworks(data)
+          ${networks
             .map(
               (n) =>
                 `<option value="${n.id}" ${
-                  n.id === (station?.networkId || data.networks[0]?.id) ? 'selected' : ''
+                  n.id === (station?.networkId || networks[0]?.id) ? 'selected' : ''
                 }>${escapeHtml(n.name)}</option>`
             )
             .join('')}

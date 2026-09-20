@@ -6,7 +6,7 @@ import {
   getNetwork,
   stationsByNetwork,
 } from '../storage.js';
-import { addFillup } from '../dictionaries.js';
+import { addFillup, listFuels, listNetworks } from '../dictionaries.js';
 import { listCars, setActiveCar } from '../cars.js';
 import { syncLayout } from '../layout.js';
 
@@ -181,12 +181,15 @@ function prepareNewFillup() {
   const data = getData();
   const car = getActiveCar(data);
   const last = getLastInputs(data, car.id) || {};
+  const lastFill = data.fillups
+    .filter((f) => f.carId === car.id)
+    .sort((a, b) => b.odometer - a.odometer || String(b.date).localeCompare(String(a.date)))[0];
   setLastInputs(
     data,
     car.id,
     {
       ...last,
-      odometer: '',
+      odometer: pickRemembered(last?.odometer, lastFill?.odometer),
       rangeKm: '',
       litersActual: '',
       date: todayISO(),
@@ -242,7 +245,10 @@ function render() {
     .filter((f) => f.carId === car.id)
     .sort((a, b) => b.odometer - a.odometer || String(b.date).localeCompare(String(a.date)))[0];
 
-  let networkId = last?.networkId ?? lastFill?.networkId ?? data.networks[0]?.id ?? '';
+  const fuels = listFuels(data);
+  const networks = listNetworks(data);
+
+  let networkId = last?.networkId ?? lastFill?.networkId ?? networks[0]?.id ?? '';
   if (last?.stationId) {
     const st = data.stations.find((s) => s.id === last.stationId);
     if (st) networkId = st.networkId;
@@ -258,19 +264,19 @@ function render() {
     '';
 
   const defaults = {
-    odometer: awaitingNew ? '' : pickRemembered(last?.odometer),
+    odometer: pickRemembered(last?.odometer, lastFill?.odometer),
     networkId,
     stationId,
     rangeKm: awaitingNew ? '' : pickRemembered(last?.rangeKm),
     consumption: pickRemembered(last?.consumption, lastFill?.consumption, '9.5'),
-    fuelId: last?.fuelId ?? lastFill?.fuelId ?? data.fuels[0]?.id ?? '',
+    fuelId: last?.fuelId ?? lastFill?.fuelId ?? fuels[0]?.id ?? '',
     price: pickRemembered(last?.price, lastFill?.price),
     date: todayISO(),
     litersActual: awaitingNew ? '' : pickRemembered(last?.litersActual),
     fullTank: last?.fullTank !== false,
   };
 
-  const selectedNetwork = getNetwork(data, defaults.networkId) || data.networks[0];
+  const selectedNetwork = getNetwork(data, defaults.networkId) || networks[0];
   const networkStations = stationsByNetwork(data, selectedNetwork?.id);
 
   root.innerHTML = `
@@ -317,7 +323,7 @@ function render() {
             selectedNetwork?.logo ? `src="${selectedNetwork.logo}"` : 'hidden'
           }>
           <select id="network" class="network-select" aria-label="Сеть">
-            ${data.networks
+            ${networks
               .map(
                 (n) =>
                   `<option value="${n.id}" ${n.id === selectedNetwork?.id ? 'selected' : ''}>${escapeHtml(
@@ -386,7 +392,7 @@ function render() {
         <label class="field">
           <span>Марка топлива</span>
           <select id="fuel">
-            ${data.fuels
+            ${fuels
               .map(
                 (f) =>
                   `<option value="${f.id}" ${f.id === defaults.fuelId ? 'selected' : ''}>${escapeHtml(
@@ -527,7 +533,7 @@ function render() {
       active.id,
       {
         ...formData,
-        odometer: '',
+        odometer: formData.odometer,
         rangeKm: '',
         litersActual: '',
         date: todayISO(),
