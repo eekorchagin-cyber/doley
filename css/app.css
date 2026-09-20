@@ -499,16 +499,14 @@ select {
 
 .result-block {
   margin-top: 6px;
-  padding: 14px 14px 12px;
-  border-radius: 16px;
-  background:
-    linear-gradient(160deg, rgba(13, 159, 143, 0.1), transparent 50%),
-    var(--bg-elev);
-  border: 1px solid rgba(13, 159, 143, 0.28);
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 4px 16px var(--elev-shadow);
 }
 
 .result-plan {
