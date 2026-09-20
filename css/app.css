@@ -776,8 +776,20 @@ select {
   gap: 10px;
 }
 
+#screen-refuel .result-plan {
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+#screen-refuel .result-plan .result-label {
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
 #screen-refuel .result-plan .result-value {
   font-size: 2.53rem;
+  display: inline-block;
+  margin-bottom: 10px;
 }
 
 #screen-refuel .result-label {
