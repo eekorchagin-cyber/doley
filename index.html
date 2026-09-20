@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Долей!">
   <meta name="theme-color" content="#e8eef6">
   <meta name="description" content="Расчёт количества топлива до полного бака">
-  <meta name="doley-version" content="23">
+  <meta name="doley-version" content="24">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
@@ -16,6 +16,16 @@
   <title>Долей!</title>
   <script>
     (function () {
+      try {
+        var standalone =
+          (window.navigator.standalone === true) ||
+          window.matchMedia('(display-mode: standalone)').matches;
+        var h = Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0);
+        if (standalone) {
+          h = Math.max(h, window.screen.height || 0, window.screen.availHeight || 0);
+        }
+        if (h > 0) document.documentElement.style.setProperty('--frame-h', h + 'px');
+      } catch (e) { /* ignore */ }
       try {
         var pref = 'system';
         var raw = localStorage.getItem('doley:v1');
@@ -86,7 +96,7 @@
     (function () {
       var VERSION_KEY = 'doley:app-version';
       var DISMISS_KEY = 'doley:update-dismissed';
-      var CURRENT_CACHE = 'doley-static-v23';
+      var CURRENT_CACHE = 'doley-static-v24';
       var remoteVersion = null;
       var remoteCache = null;
       var isStale = false;
@@ -123,7 +133,7 @@
       }
 
       async function forceApply() {
-        var next = remoteVersion != null ? remoteVersion : 23;
+        var next = remoteVersion != null ? remoteVersion : 24;
         try {
           if ('serviceWorker' in navigator) {
             var regs = await navigator.serviceWorker.getRegistrations();

@@ -8,6 +8,7 @@ import {
 } from '../storage.js';
 import { addFillup } from '../dictionaries.js';
 import { listCars, setActiveCar } from '../cars.js';
+import { syncLayout } from '../layout.js';
 
 let root = null;
 let getData = null;
@@ -230,6 +231,7 @@ function renderDock() {
       <button type="submit" form="refuel-form" class="btn-primary btn-save-fillup" id="btn-save-fillup">Сохранить заправку</button>
     `;
   }
+  syncLayout();
 }
 
 function render() {
