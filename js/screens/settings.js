@@ -26,6 +26,7 @@ import {
   listStations,
 } from '../dictionaries.js';
 import { THEME_OPTIONS, normalizeTheme } from '../theme.js';
+import { APP_VERSION } from '../updates.js';
 
 let root = null;
 let getData = null;
@@ -132,7 +133,7 @@ function renderMain(data) {
 
     <section class="settings-block">
       <h3 class="block-title">О приложении</h3>
-      <p class="hint">Долей! — расчёт топлива до полного бака. PWA для iPhone. Версия схемы данных: ${data.schemaVersion}</p>
+      <p class="hint">Долей! — расчёт топлива до полного бака. PWA для iPhone. Версия приложения: ${APP_VERSION}. Схема данных: ${data.schemaVersion}</p>
     </section>
   `;
 }

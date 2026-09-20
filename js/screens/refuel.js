@@ -14,7 +14,14 @@ let getData = null;
 let setData = null;
 let onSaved = null;
 /** После сохранения ждём «Новая заправка», чтобы не создать дубль. */
-let awaitingNew = false;
+const AWAITING_KEY = 'doley:awaiting-new-fillup';
+let awaitingNew = sessionStorage.getItem(AWAITING_KEY) === '1';
+
+function setAwaitingNew(value) {
+  awaitingNew = value;
+  if (value) sessionStorage.setItem(AWAITING_KEY, '1');
+  else sessionStorage.removeItem(AWAITING_KEY);
+}
 
 export function initRefuel(el, deps) {
   root = el;
@@ -128,7 +135,7 @@ function pickRemembered(...values) {
 }
 
 function prepareNewFillup() {
-  awaitingNew = false;
+  setAwaitingNew(false);
   const data = getData();
   const car = getActiveCar(data);
   const last = getLastInputs(data, car.id) || {};
