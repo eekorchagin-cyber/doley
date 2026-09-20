@@ -1,4 +1,4 @@
-const CACHE = 'doley-static-v12';
+const CACHE = 'doley-static-v13';
 const ASSETS = [
   './',
   './index.html',
@@ -52,7 +52,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // HTML, SW и version.json — сначала сеть, чтобы быстрее видеть обновления
+  // HTML и version.json — сначала сеть, чтобы быстрее видеть обновления
   const isNavigate = request.mode === 'navigate' || request.destination === 'document';
   const isHtml = url.pathname.endsWith('.html') || url.pathname.endsWith('/');
   const isVersion = url.pathname.endsWith('/version.json') || url.pathname.endsWith('version.json');
