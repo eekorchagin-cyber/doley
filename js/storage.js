@@ -193,15 +193,18 @@ export function getLastInputs(data, carId) {
   return data.lastInputs[carId] || null;
 }
 
-export function setLastInputs(data, carId, inputs) {
+export function setLastInputs(data, carId, inputs, options = {}) {
   const prev = data.lastInputs[carId] || {};
   const next = { ...prev, ...inputs };
-  // Пустые одометр/расход не затирают ранее запомненные значения
-  if (inputs.odometer === '' || inputs.odometer == null) {
-    next.odometer = prev.odometer ?? '';
-  }
-  if (inputs.consumption === '' || inputs.consumption == null) {
-    next.consumption = prev.consumption ?? '';
+  // Пустые одометр/расход не затирают ранее запомненные значения —
+  // кроме явного сброса после сохранения заправки.
+  if (!options.clearTripFields) {
+    if (inputs.odometer === '' || inputs.odometer == null) {
+      next.odometer = prev.odometer ?? '';
+    }
+    if (inputs.consumption === '' || inputs.consumption == null) {
+      next.consumption = prev.consumption ?? '';
+    }
   }
   data.lastInputs[carId] = next;
   saveData(data);

@@ -13,6 +13,8 @@ let root = null;
 let getData = null;
 let setData = null;
 let onSaved = null;
+/** После сохранения ждём «Новая заправка», чтобы не создать дубль. */
+let awaitingNew = false;
 
 export function initRefuel(el, deps) {
   root = el;
@@ -48,6 +50,7 @@ function readForm() {
 }
 
 function persistInputs() {
+  if (awaitingNew) return;
   const data = getData();
   const car = getActiveCar(data);
   setLastInputs(data, car.id, readForm());
@@ -124,6 +127,43 @@ function pickRemembered(...values) {
   return '';
 }
 
+function prepareNewFillup() {
+  awaitingNew = false;
+  const data = getData();
+  const car = getActiveCar(data);
+  const last = getLastInputs(data, car.id) || {};
+  setLastInputs(
+    data,
+    car.id,
+    {
+      ...last,
+      odometer: '',
+      rangeKm: '',
+      litersActual: '',
+      date: todayISO(),
+    },
+    { clearTripFields: true }
+  );
+  setData(data);
+  render();
+  root.querySelector('#odo')?.focus();
+}
+
+function setFormLocked(locked) {
+  const form = root.querySelector('#refuel-form');
+  if (!form) return;
+  form.querySelectorAll('input, select').forEach((el) => {
+    if (el.id === 'car-select') return;
+    el.disabled = locked;
+  });
+  const station = root.querySelector('#station');
+  if (station && !locked) {
+    const data = getData();
+    const list = stationsByNetwork(data, root.querySelector('#network')?.value);
+    station.disabled = list.length === 0;
+  }
+}
+
 function render() {
   const data = getData();
   const car = getActiveCar(data);
@@ -149,14 +189,15 @@ function render() {
     '';
 
   const defaults = {
-    odometer: pickRemembered(last?.odometer, lastFill?.odometer),
+    odometer: awaitingNew ? '' : pickRemembered(last?.odometer),
     networkId,
     stationId,
-    rangeKm: pickRemembered(last?.rangeKm),
+    rangeKm: awaitingNew ? '' : pickRemembered(last?.rangeKm),
     consumption: pickRemembered(last?.consumption, lastFill?.consumption, '9.5'),
     fuelId: last?.fuelId ?? lastFill?.fuelId ?? data.fuels[0]?.id ?? '',
     price: pickRemembered(last?.price, lastFill?.price),
-    date: last?.date && last.date === todayISO() ? last.date : todayISO(),
+    date: todayISO(),
+    litersActual: awaitingNew ? '' : pickRemembered(last?.litersActual),
   };
 
   const selectedNetwork = getNetwork(data, defaults.networkId) || data.networks[0];
@@ -286,15 +327,23 @@ function render() {
 
       <label class="field field-optional">
         <span>Факт залито, л <em>(необяз.)</em></span>
-        <input id="liters-actual" inputmode="decimal" type="number" step="0.01" min="0" placeholder="для коррекции">
+        <input id="liters-actual" inputmode="decimal" type="number" step="0.01" min="0" placeholder="для коррекции" value="${escapeAttr(
+          defaults.litersActual
+        )}">
       </label>
 
-      <button type="submit" class="btn-primary">Сохранить заправку</button>
-      <p id="save-msg" class="save-msg" hidden></p>
+      ${
+        awaitingNew
+          ? `<button type="button" class="btn-primary" id="btn-new-fillup">Новая заправка</button>
+             <p id="save-msg" class="save-msg">Заправка сохранена. Нажмите «Новая заправка» для следующего ввода.</p>`
+          : `<button type="submit" class="btn-primary">Сохранить заправку</button>
+             <p id="save-msg" class="save-msg" hidden></p>`
+      }
     </form>
   `;
 
   root.querySelector('#car-select').addEventListener('change', (e) => {
+    awaitingNew = false;
     const d = getData();
     setActiveCar(d, e.target.value);
     setData(d);
@@ -302,23 +351,31 @@ function render() {
   });
 
   const form = root.querySelector('#refuel-form');
-  root.querySelector('#network').addEventListener('change', () => {
+  root.querySelector('#network')?.addEventListener('change', () => {
     refillStations();
     syncNetworkLogo();
     persistInputs();
   });
 
+  root.querySelector('#btn-new-fillup')?.addEventListener('click', () => {
+    prepareNewFillup();
+  });
+
   form.addEventListener('input', () => {
+    if (awaitingNew) return;
     recalc();
     persistInputs();
   });
   form.addEventListener('change', () => {
+    if (awaitingNew) return;
     recalc();
     persistInputs();
   });
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (awaitingNew) return;
+
     const d = getData();
     const active = getActiveCar(d);
     const formData = readForm();
@@ -335,7 +392,7 @@ function render() {
       calib.k
     );
 
-    addFillup(d, {
+    const payload = {
       carId: active.id,
       date: formData.date,
       odometer: formData.odometer,
@@ -348,22 +405,39 @@ function render() {
       litersToFull: result.litersToFull,
       cost: result.cost,
       litersActual: formData.litersActual,
-    });
+    };
 
-    setLastInputs(d, active.id, { ...formData, litersActual: '' });
+    const added = addFillup(d, payload);
+    if (!added.ok) {
+      alert(added.reason || 'Не удалось сохранить заправку');
+      return;
+    }
+
+    setLastInputs(
+      d,
+      active.id,
+      {
+        ...formData,
+        odometer: '',
+        rangeKm: '',
+        litersActual: '',
+        date: todayISO(),
+      },
+      { clearTripFields: true }
+    );
     setData(d);
 
-    const msg = root.querySelector('#save-msg');
-    msg.textContent = `Сохранено: ${formatNum(result.litersToFull)} л · ${formatNum(result.cost)} ₽`;
-    msg.hidden = false;
+    awaitingNew = true;
     if (onSaved) onSaved();
-    setTimeout(() => {
-      if (msg) msg.hidden = true;
-    }, 2500);
+    render();
   });
 
-  syncNetworkLogo();
-  recalc();
+  if (awaitingNew) {
+    setFormLocked(true);
+  } else {
+    syncNetworkLogo();
+    recalc();
+  }
 }
 
 function escapeHtml(s) {

@@ -101,7 +101,24 @@ export function deleteStation(data, id) {
   return { ok: true };
 }
 
+export function findDuplicateFillup(data, fields) {
+  const odometer = Number(fields.odometer) || 0;
+  const stationId = fields.stationId || null;
+  return (
+    data.fillups.find(
+      (f) =>
+        f.carId === fields.carId &&
+        f.date === fields.date &&
+        f.odometer === odometer &&
+        (f.stationId || null) === stationId
+    ) || null
+  );
+}
+
 export function addFillup(data, fields) {
+  if (findDuplicateFillup(data, fields)) {
+    return { ok: false, reason: 'Такая заправка уже сохранена', fillup: null };
+  }
   const fillup = {
     id: uid('fill'),
     carId: fields.carId,
@@ -122,7 +139,7 @@ export function addFillup(data, fields) {
   };
   data.fillups.push(fillup);
   saveData(data);
-  return fillup;
+  return { ok: true, fillup };
 }
 
 export function updateFillup(data, id, fields) {
