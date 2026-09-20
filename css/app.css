@@ -12,7 +12,6 @@
   --radius: 12px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --app-height: 100dvh;
   --font: 'IBM Plex Sans', system-ui, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
   --bg-glow: #dceaf8;
@@ -63,6 +62,7 @@ html[data-theme="dark"] {
 html,
 body {
   margin: 0;
+  width: 100%;
   height: 100%;
   overflow: hidden;
   background:
@@ -74,7 +74,10 @@ body {
 }
 
 body {
-  height: var(--app-height, 100dvh);
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 button,
@@ -136,10 +139,14 @@ select {
 }
 
 .app-shell {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
   max-width: 480px;
   margin: 0 auto;
-  height: var(--app-height, 100dvh);
-  max-height: var(--app-height, 100dvh);
   display: flex;
   flex-direction: column;
   padding-top: var(--safe-top);
@@ -147,15 +154,62 @@ select {
 }
 
 .screens {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 12px 16px 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 0;
 }
 
 .screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 16px;
   animation: fadeIn 0.22s ease;
+}
+
+.screen[hidden] {
+  display: none !important;
+}
+
+.screen.has-dock {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.screen-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+.screen-dock {
+  flex-shrink: 0;
+  width: 100%;
+  margin: 0;
+  padding: 10px 0 8px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--bg) 28%,
+    var(--bg) 100%
+  );
+}
+
+.screen-dock .btn-new-fillup {
+  pointer-events: auto;
+  width: 100%;
+  margin: 0;
+  box-shadow: 0 8px 24px rgba(13, 159, 143, 0.35);
+  font-size: 1.05rem;
 }
 
 @keyframes fadeIn {
@@ -430,32 +484,6 @@ select {
 
 .form-spacer {
   height: 8px;
-}
-
-.sticky-actions {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  margin: 12px 0 0;
-  padding: 10px 0 8px;
-  z-index: 5;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    var(--bg) 28%,
-    var(--bg) 100%
-  );
-}
-
-.sticky-actions .btn-new-fillup {
-  pointer-events: auto;
-  width: 100%;
-  margin: 0;
-  box-shadow: 0 8px 24px rgba(13, 159, 143, 0.35);
-  font-size: 1.05rem;
 }
 
 .result-block {
@@ -1131,7 +1159,7 @@ select {
   }
 
   .screens {
-    padding: 8px 14px 12px;
+    padding: 8px 14px 0;
   }
 
   .screen-header {
@@ -1241,8 +1269,8 @@ select {
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .screens {
-    padding-bottom: 64px;
+  .screen {
+    padding-bottom: 12px;
   }
 
   .dash-form {

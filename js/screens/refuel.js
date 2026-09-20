@@ -231,6 +231,7 @@ function render() {
   const networkStations = stationsByNetwork(data, selectedNetwork?.id);
 
   root.innerHTML = `
+    <div class="screen-body">
     <header class="screen-header">
       <div class="brand-row">
         <div class="car-thumb" style="--car-color:${car.color}">
@@ -387,8 +388,9 @@ function render() {
         ${awaitingNew ? 'Заправка сохранена. Нажмите «Новая заправка» для следующего ввода.' : ''}
       </p>
     </form>
+    </div>
 
-    <div class="sticky-actions">
+    <div class="screen-dock">
       ${
         awaitingNew
           ? `<button type="button" class="btn-primary btn-new-fillup" id="btn-new-fillup">Новая заправка</button>`
