@@ -88,23 +88,18 @@ function render() {
               <th></th>
               <th><span class="th-short">Л</span><span class="th-full">Израсх., л</span></th>
               <th>л/100</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             ${rows
               .map(
-                (r) => `<tr data-id="${r.id}">
+                (r) => `<tr class="history-row" data-id="${r.id}" tabindex="0">
               <td>${escapeHtml(formatDate(r.date))}</td>
               <td>${r.odometer}</td>
               <td>${r.distance != null ? r.distance : '—'}</td>
               <td title="${escapeAttr(r.fuelName)}"><span class="fuel-dot" style="background:${r.color}"></span></td>
               <td>${r.litersUsed != null ? formatNum(r.litersUsed) : '—'}</td>
               <td>${r.actualCons != null ? formatNum(r.actualCons) : '—'}</td>
-              <td class="row-actions">
-                <button type="button" class="btn-icon" data-edit="${r.id}" title="Изменить">✎</button>
-                <button type="button" class="btn-icon danger" data-del="${r.id}" title="Удалить">×</button>
-              </td>
             </tr>`
               )
               .join('')}
@@ -114,24 +109,103 @@ function render() {
         }
       </section>
     </div>
+    <p class="history-hint">Удерживайте строку, чтобы изменить или удалить заправку</p>
   `;
 
-  root.querySelectorAll('[data-del]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (!confirm('Удалить эту заправку из истории?')) return;
-      const d = getData();
-      deleteFillup(d, btn.getAttribute('data-del'));
-      setData(d);
-      notify();
-      render();
+  bindRowLongPress();
+  drawChart(data, car.id, rows);
+}
+
+function bindRowLongPress() {
+  const LONG_MS = 480;
+  root.querySelectorAll('tr.history-row').forEach((tr) => {
+    let timer = 0;
+    let moved = false;
+    const id = tr.getAttribute('data-id');
+
+    const clear = () => {
+      clearTimeout(timer);
+      timer = 0;
+      tr.classList.remove('is-pressing');
+    };
+
+    const start = (e) => {
+      if (e.type === 'mousedown' && e.button !== 0) return;
+      moved = false;
+      tr.classList.add('is-pressing');
+      timer = window.setTimeout(() => {
+        timer = 0;
+        tr.classList.remove('is-pressing');
+        if (navigator.vibrate) navigator.vibrate(12);
+        openRowMenu(id);
+      }, LONG_MS);
+    };
+
+    const onMove = () => {
+      moved = true;
+      clear();
+    };
+
+    tr.addEventListener('touchstart', start, { passive: true });
+    tr.addEventListener('touchend', clear);
+    tr.addEventListener('touchcancel', clear);
+    tr.addEventListener('touchmove', onMove, { passive: true });
+
+    tr.addEventListener('mousedown', start);
+    tr.addEventListener('mouseup', clear);
+    tr.addEventListener('mouseleave', clear);
+    tr.addEventListener('mousemove', () => {
+      if (timer) onMove();
+    });
+
+    tr.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      clear();
+      openRowMenu(id);
+    });
+
+    tr.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openRowMenu(id);
+      }
     });
   });
+}
 
-  root.querySelectorAll('[data-edit]').forEach((btn) => {
-    btn.addEventListener('click', () => openEdit(btn.getAttribute('data-edit')));
-  });
+function openRowMenu(id) {
+  const data = getData();
+  const fillup = data.fillups.find((f) => f.id === id);
+  if (!fillup) return;
 
-  drawChart(data, car.id, rows);
+  const modal = getEditModalHost();
+  modal.hidden = false;
+  modal.innerHTML = `
+    <div class="modal-card action-sheet" role="menu">
+      <p class="action-sheet-title">${escapeHtml(formatDate(fillup.date))} · ${fillup.odometer} км</p>
+      <button type="button" class="action-sheet-btn" id="m-edit">Редактировать</button>
+      <button type="button" class="action-sheet-btn danger" id="m-del">Удалить</button>
+      <button type="button" class="action-sheet-btn cancel" id="m-cancel">Отмена</button>
+    </div>
+  `;
+
+  modal.querySelector('#m-cancel').onclick = () => closeEditModal();
+  modal.onclick = (e) => {
+    if (e.target === modal) closeEditModal();
+  };
+  modal.querySelector('#m-edit').onclick = () => {
+    closeEditModal();
+    openEdit(id);
+  };
+  modal.querySelector('#m-del').onclick = () => {
+    if (!confirm('Удалить эту заправку из истории?')) return;
+    const d = getData();
+    deleteFillup(d, id);
+    setData(d);
+    closeEditModal();
+    notify();
+    render();
+  };
 }
 
 function buildRows(data, carId) {
@@ -336,21 +410,11 @@ function openEdit(id) {
         <button type="button" class="btn-secondary" id="e-cancel">Отмена</button>
         <button type="button" class="btn-primary" id="e-save">Сохранить</button>
       </div>
-      <button type="button" class="btn-danger-block" id="e-delete">Удалить заправку</button>
     </div>
   `;
   modal.querySelector('#e-cancel').onclick = () => closeEditModal();
   modal.onclick = (e) => {
     if (e.target === modal) closeEditModal();
-  };
-  modal.querySelector('#e-delete').onclick = () => {
-    if (!confirm('Удалить эту заправку из истории?')) return;
-    const d = getData();
-    deleteFillup(d, id);
-    setData(d);
-    closeEditModal();
-    notify();
-    render();
   };
   modal.querySelector('#e-save').onclick = () => {
     const d = getData();

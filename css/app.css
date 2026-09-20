@@ -866,16 +866,6 @@ select {
   letter-spacing: 0.02em;
 }
 
-.history-table th:last-child,
-.history-table td.row-actions {
-  position: sticky;
-  right: 0;
-  background: var(--bg-elev);
-  box-shadow: -6px 0 8px -6px rgba(20, 40, 70, 0.18);
-  padding-left: 8px;
-  padding-right: 8px;
-}
-
 .history-table th:nth-child(5),
 .history-table td:nth-child(5),
 .history-table th:nth-child(6),
@@ -889,6 +879,60 @@ select {
   width: 16px;
   padding-left: 4px;
   padding-right: 4px;
+}
+
+.history-row {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  transition: background 0.15s ease;
+}
+
+.history-row.is-pressing,
+.history-row:active {
+  background: var(--accent-dim);
+}
+
+.history-hint {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.action-sheet {
+  gap: 6px !important;
+  padding-bottom: calc(12px + var(--safe-bottom)) !important;
+}
+
+.action-sheet-title {
+  margin: 0 0 6px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.action-sheet-btn {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--bg-field);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.action-sheet-btn.danger {
+  color: var(--danger);
+}
+
+.action-sheet-btn.cancel {
+  margin-top: 4px;
+  font-weight: 500;
+  color: var(--muted);
 }
 
 .fuel-dot {
