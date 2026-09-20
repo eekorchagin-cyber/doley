@@ -12,6 +12,7 @@
   --radius: 12px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tab-bar-h: 56px;
   --font: 'IBM Plex Sans', system-ui, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
   --bg-glow: #dceaf8;
@@ -73,11 +74,14 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  height: -webkit-fill-available;
+}
+
 body {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  position: relative;
 }
 
 button,
@@ -141,20 +145,20 @@ select {
 .app-shell {
   position: fixed;
   top: 0;
-  right: 0;
-  bottom: 0;
   left: 0;
-  width: 100%;
-  max-width: 480px;
+  right: 0;
+  width: min(480px, 100%);
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
+  height: var(--app-shell-h, 100%);
+  max-height: var(--app-shell-h, 100%);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
   padding-top: var(--safe-top);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .screens {
-  flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
   display: flex;
@@ -175,37 +179,33 @@ select {
   display: none !important;
 }
 
-.screen.has-dock {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding-bottom: 0;
-}
-
-.screen-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 8px;
-}
-
-.screen-dock {
+.app-dock {
   flex-shrink: 0;
   width: 100%;
-  margin: 0;
-  padding: 10px 0 8px;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    var(--bg) 28%,
-    var(--bg) 100%
-  );
+  padding: 8px 16px 10px;
+  background: var(--bg);
+  border-top: 1px solid transparent;
+  box-sizing: border-box;
 }
 
-.screen-dock .btn-new-fillup {
-  pointer-events: auto;
+.app-dock[hidden] {
+  display: none !important;
+}
+
+.app-dock.is-saved {
+  border-top-color: rgba(13, 159, 143, 0.25);
+}
+
+.app-dock-msg {
+  margin: 0 0 8px;
+  text-align: center;
+  color: var(--accent);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.app-dock .btn-new-fillup,
+.app-dock .btn-save-fillup {
   width: 100%;
   margin: 0;
   box-shadow: 0 8px 24px rgba(13, 159, 143, 0.35);
@@ -617,16 +617,17 @@ select {
 
 .tab-bar {
   position: relative;
-  flex-shrink: 0;
+  z-index: 30;
   width: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
+  min-height: var(--tab-bar-h);
   padding: 8px 10px calc(8px + var(--safe-bottom));
   background: var(--tab-bar-bg);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--line);
-  z-index: 20;
+  box-sizing: border-box;
 }
 
 .tab-btn {
@@ -1144,7 +1145,7 @@ select {
 
 @media (orientation: landscape) {
   .app-shell {
-    max-width: min(960px, 100%);
+    width: min(960px, 100%);
   }
 
   .tab-bar {
@@ -1310,13 +1311,13 @@ select {
 
 @media (min-width: 768px) {
   .app-shell {
-    max-width: 560px;
+    width: min(560px, 100%);
     box-shadow: 0 0 0 1px var(--line);
   }
 }
 
 @media (min-width: 768px) and (orientation: landscape) {
   .app-shell {
-    max-width: min(960px, 100%);
+    width: min(960px, 100%);
   }
 }

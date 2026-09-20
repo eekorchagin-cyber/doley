@@ -57,6 +57,8 @@ function showScreen(name) {
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.screen === name);
   });
+  const dock = document.getElementById('app-dock');
+  if (dock) dock.hidden = name !== 'refuel';
   if (name === 'history') refreshHistory();
   if (name === 'refuel') refreshRefuel();
   if (name === 'settings') refreshSettings();

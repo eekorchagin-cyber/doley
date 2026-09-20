@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Долей!">
   <meta name="theme-color" content="#e8eef6">
   <meta name="description" content="Расчёт количества топлива до полного бака">
-  <meta name="doley-version" content="21">
+  <meta name="doley-version" content="22">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
@@ -56,10 +56,12 @@
   </div>
   <div class="app-shell">
     <main class="screens">
-      <section id="screen-refuel" class="screen is-active has-dock" aria-label="Заправка"></section>
+      <section id="screen-refuel" class="screen is-active" aria-label="Заправка"></section>
       <section id="screen-history" class="screen" hidden aria-label="История"></section>
       <section id="screen-settings" class="screen" hidden aria-label="Настройки"></section>
     </main>
+
+    <div id="app-dock" class="app-dock" hidden></div>
 
     <nav class="tab-bar" aria-label="Навигация">
       <button type="button" class="tab-btn active" data-screen="refuel">
@@ -84,7 +86,7 @@
     (function () {
       var VERSION_KEY = 'doley:app-version';
       var DISMISS_KEY = 'doley:update-dismissed';
-      var CURRENT_CACHE = 'doley-static-v21';
+      var CURRENT_CACHE = 'doley-static-v22';
       var remoteVersion = null;
       var remoteCache = null;
       var isStale = false;
@@ -121,7 +123,7 @@
       }
 
       async function forceApply() {
-        var next = remoteVersion != null ? remoteVersion : 21;
+        var next = remoteVersion != null ? remoteVersion : 22;
         try {
           if ('serviceWorker' in navigator) {
             var regs = await navigator.serviceWorker.getRegistrations();

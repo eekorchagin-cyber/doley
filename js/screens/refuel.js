@@ -15,12 +15,33 @@ let setData = null;
 let onSaved = null;
 /** После сохранения ждём «Новая заправка», чтобы не создать дубль. */
 const AWAITING_KEY = 'doley:awaiting-new-fillup';
-let awaitingNew = sessionStorage.getItem(AWAITING_KEY) === '1';
+
+function readAwaitingFlag() {
+  try {
+    if (localStorage.getItem(AWAITING_KEY) === '1') return true;
+    // Миграция со старого sessionStorage
+    if (sessionStorage.getItem(AWAITING_KEY) === '1') {
+      localStorage.setItem(AWAITING_KEY, '1');
+      sessionStorage.removeItem(AWAITING_KEY);
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+let awaitingNew = readAwaitingFlag();
 
 function setAwaitingNew(value) {
   awaitingNew = value;
-  if (value) sessionStorage.setItem(AWAITING_KEY, '1');
-  else sessionStorage.removeItem(AWAITING_KEY);
+  try {
+    if (value) localStorage.setItem(AWAITING_KEY, '1');
+    else localStorage.removeItem(AWAITING_KEY);
+    sessionStorage.removeItem(AWAITING_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function initRefuel(el, deps) {
@@ -191,6 +212,26 @@ function setFormLocked(locked) {
   }
 }
 
+function renderDock() {
+  const dock = document.getElementById('app-dock');
+  if (!dock) return;
+  dock.hidden = false;
+  dock.classList.toggle('is-saved', awaitingNew);
+  if (awaitingNew) {
+    dock.innerHTML = `
+      <p class="app-dock-msg">Заправка сохранена</p>
+      <button type="button" class="btn-primary btn-new-fillup" id="btn-new-fillup">Новая заправка</button>
+    `;
+    dock.querySelector('#btn-new-fillup')?.addEventListener('click', () => {
+      prepareNewFillup();
+    });
+  } else {
+    dock.innerHTML = `
+      <button type="submit" form="refuel-form" class="btn-primary btn-save-fillup" id="btn-save-fillup">Сохранить заправку</button>
+    `;
+  }
+}
+
 function render() {
   const data = getData();
   const car = getActiveCar(data);
@@ -231,7 +272,6 @@ function render() {
   const networkStations = stationsByNetwork(data, selectedNetwork?.id);
 
   root.innerHTML = `
-    <div class="screen-body">
     <header class="screen-header">
       <div class="brand-row">
         <div class="car-thumb" style="--car-color:${car.color}">
@@ -384,21 +424,10 @@ function render() {
       <p id="cost-hint" class="cost-hint">Стоимость = факт залитых литров × цена за литр</p>
 
       <div class="form-spacer" aria-hidden="true"></div>
-      <p id="save-msg" class="save-msg" ${awaitingNew ? '' : 'hidden'}>
-        ${awaitingNew ? 'Заправка сохранена. Нажмите «Новая заправка» для следующего ввода.' : ''}
-      </p>
     </form>
-    </div>
-
-    <div class="screen-dock">
-      ${
-        awaitingNew
-          ? `<button type="button" class="btn-primary btn-new-fillup" id="btn-new-fillup">Новая заправка</button>`
-          : `<button type="submit" form="refuel-form" class="btn-primary btn-new-fillup" id="btn-save-fillup">Сохранить заправку</button>`
-      }
-    </div>
   `;
 
+  renderDock();
   root.querySelector('#car-select').addEventListener('change', (e) => {
     setAwaitingNew(false);
     const d = getData();
@@ -412,10 +441,6 @@ function render() {
     refillStations();
     syncNetworkLogo();
     persistInputs();
-  });
-
-  root.querySelector('#btn-new-fillup')?.addEventListener('click', () => {
-    prepareNewFillup();
   });
 
   root.querySelectorAll('input[name="fill-mode"]').forEach((el) => {
