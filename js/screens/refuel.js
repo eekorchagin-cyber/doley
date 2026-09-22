@@ -523,6 +523,27 @@ function render() {
       return;
     }
 
+    const odo = Number(formData.odometer);
+    if (!Number.isFinite(odo) || odo < 0) {
+      alert('Укажите корректное значение одометра');
+      root.querySelector('#odo')?.focus();
+      return;
+    }
+
+    const prevOdo = d.fillups
+      .filter((f) => f.carId === active.id)
+      .reduce((max, f) => Math.max(max, Number(f.odometer) || 0), 0);
+
+    if (prevOdo > 0 && odo < prevOdo) {
+      const ok = confirm(
+        `Одометр ${odo.toLocaleString('ru-RU')} км меньше предыдущего значения ${prevOdo.toLocaleString('ru-RU')} км.\n\nЭто ошибка ввода? Нажмите «Отмена», чтобы исправить, или «OK», чтобы сохранить как есть.`
+      );
+      if (!ok) {
+        root.querySelector('#odo')?.focus();
+        return;
+      }
+    }
+
     const calib = computeCalibration(d.fillups, active.id);
     const planned = formData.fullTank
       ? calcFill(
