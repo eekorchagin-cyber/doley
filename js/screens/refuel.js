@@ -536,7 +536,7 @@ function render() {
 
     if (prevOdo > 0 && odo < prevOdo) {
       const ok = confirm(
-        `Одометр ${odo.toLocaleString('ru-RU')} км меньше предыдущего значения ${prevOdo.toLocaleString('ru-RU')} км.\n\nЭто ошибка ввода? Нажмите «Отмена», чтобы исправить, или «OK», чтобы сохранить как есть.`
+        `Одометр ${odo.toLocaleString('ru-RU')} км меньше предыдущего значения ${prevOdo.toLocaleString('ru-RU')} км.\n\nВозможно, это ошибка ввода. Сохранить всё равно?`
       );
       if (!ok) {
         root.querySelector('#odo')?.focus();
