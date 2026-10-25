@@ -13,7 +13,7 @@ function badgeLogo(label, bg, fg = '#fff') {
 export const DEFAULT_NETWORKS = [
   { name: 'Лукойл', logo: badgeLogo('ЛУК', '#e30613') },
   { name: 'Роснефть', logo: badgeLogo('РН', '#ffcc00', '#1a1a1a') },
-  { name: 'Газпромнефть', logo: badgeLogo('ГПН', '#0066b3') },
+  { name: 'Газпромнефть', logo: badgeLogo('ГПН', '#0066b3'), loyaltyApp: 'https://gpnbonus.ru/pwa/' },
   { name: 'Татнефть', logo: badgeLogo('ТН', '#009640') },
   { name: 'Башнефть', logo: badgeLogo('БН', '#f6a800', '#1a1a1a') },
   { name: 'Shell', logo: badgeLogo('Sh', '#dd1d21') },
@@ -28,5 +28,6 @@ export function createDefaultNetworks(uid) {
     id: uid('net'),
     name: n.name,
     logo: n.logo,
+    ...(n.loyaltyApp ? { loyaltyApp: n.loyaltyApp } : {}),
   }));
 }

@@ -34,7 +34,19 @@ function defaultData() {
     fillups: [],
     lastInputs: {},
     theme: 'system',
+    loyaltySeeded: true,
   };
+}
+
+/** Однократно: бонусные программы по умолчанию для уже сохранённых сетей. */
+function seedLoyaltyApps(data) {
+  if (data.loyaltySeeded) return;
+  for (const def of DEFAULT_NETWORKS) {
+    if (!def.loyaltyApp) continue;
+    const net = data.networks.find((n) => n.name.toLowerCase() === def.name.toLowerCase());
+    if (net && !net.loyaltyApp) net.loyaltyApp = def.loyaltyApp;
+  }
+  data.loyaltySeeded = true;
 }
 
 /** Разовый сид каталога при миграции со старой схемы (не при каждом запуске). */
@@ -149,7 +161,9 @@ function migrate(data) {
     next.theme = 'system';
   }
 
+  if (!('loyaltySeeded' in data)) next.loyaltySeeded = false;
   migrateToNetworksAndStations(next);
+  seedLoyaltyApps(next);
   next.schemaVersion = SCHEMA_VERSION;
   return next;
 }

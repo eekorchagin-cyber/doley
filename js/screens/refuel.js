@@ -9,6 +9,7 @@ import {
 import { addFillup, listFuels, listNetworks } from '../dictionaries.js';
 import { listCars, setActiveCar } from '../cars.js';
 import { syncLayout } from '../layout.js';
+import { hasLoyalty, loyaltyAppHref, openLoyaltyApp } from '../loyalty.js';
 
 let root = null;
 let getData = null;
@@ -89,6 +90,8 @@ function persistInputs() {
 function syncNetworkLogo() {
   const data = getData();
   const network = getNetwork(data, root.querySelector('#network')?.value);
+  const loyaltyBtn = root.querySelector('#btn-loyalty');
+  if (loyaltyBtn) loyaltyBtn.hidden = !hasLoyalty(network);
   const img = root.querySelector('#network-logo');
   if (!img) return;
   if (network?.logo) {
@@ -98,6 +101,43 @@ function syncNetworkLogo() {
     img.removeAttribute('src');
     img.hidden = true;
   }
+}
+
+function closeLoyaltySheet() {
+  document.getElementById('loyalty-sheet')?.remove();
+}
+
+function openLoyalty() {
+  const network = getNetwork(getData(), root.querySelector('#network')?.value);
+  if (!hasLoyalty(network)) return;
+  const appHref = loyaltyAppHref(network.loyaltyApp);
+  if (!network.loyaltyCard) {
+    openLoyaltyApp(network.loyaltyApp);
+    return;
+  }
+  closeLoyaltySheet();
+  const modal = document.createElement('div');
+  modal.id = 'loyalty-sheet';
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-card loyalty-sheet">
+      <h3>${escapeHtml(network.name)} · бонусная карта</h3>
+      <img class="loyalty-card-full" src="${network.loyaltyCard}" alt="Бонусная карта">
+      <div class="modal-actions${appHref ? '' : ' modal-actions-single'}">
+        <button type="button" class="btn-secondary" id="loyalty-close">Закрыть</button>
+        ${appHref ? '<button type="button" class="btn-primary" id="loyalty-open">Открыть приложение</button>' : ''}
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.onclick = (e) => {
+    if (e.target === modal) closeLoyaltySheet();
+  };
+  modal.querySelector('#loyalty-close').onclick = closeLoyaltySheet;
+  modal.querySelector('#loyalty-open')?.addEventListener('click', () => {
+    closeLoyaltySheet();
+    openLoyaltyApp(network.loyaltyApp);
+  });
 }
 
 function refillStations(preferredId) {
@@ -335,8 +375,13 @@ function render() {
         </label>
       </div>
 
-      <label class="field">
-        <span>АЗС</span>
+      <div class="field">
+        <div class="field-head">
+          <span>АЗС</span>
+          <button type="button" class="loyalty-btn" id="btn-loyalty" ${
+            hasLoyalty(selectedNetwork) ? '' : 'hidden'
+          }>💳 Бонусы</button>
+        </div>
         <div class="station-picker">
           <img id="network-logo" class="station-logo-lg" alt="" ${
             selectedNetwork?.logo ? `src="${selectedNetwork.logo}"` : 'hidden'
@@ -368,7 +413,7 @@ function render() {
             }
           </select>
         </div>
-      </label>
+      </div>
 
       <div class="fill-mode" role="group" aria-label="Тип заправки">
         <label class="fill-mode-option">
@@ -474,6 +519,7 @@ function render() {
   };
   dateInput?.addEventListener('input', syncDateDisplay);
   dateInput?.addEventListener('change', syncDateDisplay);
+  root.querySelector('#btn-loyalty')?.addEventListener('click', openLoyalty);
 
   root.querySelector('#network')?.addEventListener('change', () => {
     refillStations();

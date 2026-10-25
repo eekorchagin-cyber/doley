@@ -27,6 +27,7 @@ import {
 } from '../dictionaries.js';
 import { THEME_OPTIONS, normalizeTheme } from '../theme.js';
 import { APP_VERSION } from '../updates.js';
+import { hasLoyalty, loyaltyAppError } from '../loyalty.js';
 
 let root = null;
 let getData = null;
@@ -219,7 +220,7 @@ function renderDictContent(data, view) {
 
   if (view === 'networks') {
     return `
-      <p class="hint">Только название и логотип, без адреса.</p>
+      <p class="hint">Название, логотип и бонусная программа, без адреса.</p>
       <ul class="dict-list">
         ${listNetworks(data)
           .map(
@@ -227,7 +228,9 @@ function renderDictContent(data, view) {
             <div class="dict-main">
               ${n.logo ? `<img class="station-logo" src="${n.logo}" alt="">` : `<span class="station-logo logo-empty"></span>`}
               <div>
-                <strong>${escapeHtml(n.name)}</strong>
+                <strong>${escapeHtml(n.name)}</strong>${
+                  hasLoyalty(n) ? ' <span class="loyalty-mark" title="Есть бонусная программа">💳</span>' : ''
+                }
               </div>
             </div>
             <div class="dict-actions">
@@ -531,12 +534,45 @@ function openNetworkForm(id) {
       <label class="field"><span>Название сети</span><input id="n-name" value="${escapeAttr(network?.name || '')}"></label>
       <label class="field"><span>Логотип</span><input id="n-logo" type="file" accept="image/*"></label>
       ${network?.logo ? `<img class="preview-img" src="${network.logo}" alt="">` : ''}
+      <label class="field"><span>Бонусная программа</span><input id="n-loyalty" value="${escapeAttr(
+        network?.loyaltyApp || ''
+      )}" placeholder="https://… или имя команды" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <p class="hint loyalty-hint" id="n-loyalty-err"></p>
+      <label class="field"><span>Фото бонусной карты</span><input id="n-card" type="file" accept="image/*"></label>
+      <div class="loyalty-card-edit" id="n-card-box" ${network?.loyaltyCard ? '' : 'hidden'}>
+        <img class="loyalty-card-preview" id="n-card-img" src="${network?.loyaltyCard || ''}" alt="">
+        <button type="button" class="btn-secondary" id="n-card-clear">Убрать фото</button>
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn-secondary" id="n-cancel">Отмена</button>
         <button type="button" class="btn-primary" id="n-save">Сохранить</button>
       </div>
     </div>
   `;
+
+  let cardData = network?.loyaltyCard || '';
+  const loyaltyInput = modal.querySelector('#n-loyalty');
+  const loyaltyErr = modal.querySelector('#n-loyalty-err');
+  const syncLoyaltyErr = () => {
+    const msg = loyaltyAppError(loyaltyInput.value);
+    loyaltyErr.textContent = msg;
+    loyaltyErr.hidden = !msg;
+  };
+  loyaltyInput.addEventListener('input', syncLoyaltyErr);
+  syncLoyaltyErr();
+
+  modal.querySelector('#n-card').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    cardData = await readAsDataURL(file, 900);
+    modal.querySelector('#n-card-img').src = cardData;
+    modal.querySelector('#n-card-box').hidden = false;
+  });
+  modal.querySelector('#n-card-clear').onclick = () => {
+    cardData = '';
+    modal.querySelector('#n-card').value = '';
+    modal.querySelector('#n-card-box').hidden = true;
+  };
 
   let logoData = network?.logo || '';
   modal.querySelector('#n-logo').addEventListener('change', async (e) => {
@@ -558,10 +594,17 @@ function openNetworkForm(id) {
     if (e.target === modal) closeSettingsModal();
   };
   modal.querySelector('#n-save').onclick = () => {
+    const loyaltyApp = loyaltyInput.value.trim();
+    if (loyaltyAppError(loyaltyApp)) {
+      loyaltyInput.focus();
+      return;
+    }
     const d = getData();
     const fields = {
       name: modal.querySelector('#n-name').value,
       logo: logoData,
+      loyaltyApp,
+      loyaltyCard: cardData,
     };
     if (network) updateNetwork(d, network.id, fields);
     else addNetwork(d, fields);

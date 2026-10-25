@@ -41,6 +41,8 @@ export function addNetwork(data, fields) {
     id: uid('net'),
     name: String(fields.name || '').trim() || 'Сеть',
     logo: fields.logo || '',
+    loyaltyApp: String(fields.loyaltyApp || '').trim(),
+    loyaltyCard: fields.loyaltyCard || '',
   };
   data.networks.push(network);
   saveData(data);
@@ -52,6 +54,8 @@ export function updateNetwork(data, id, fields) {
   if (!network) return null;
   if (fields.name != null) network.name = String(fields.name).trim() || network.name;
   if (fields.logo != null) network.logo = fields.logo;
+  if (fields.loyaltyApp != null) network.loyaltyApp = String(fields.loyaltyApp).trim();
+  if (fields.loyaltyCard != null) network.loyaltyCard = fields.loyaltyCard;
   saveData(data);
   return network;
 }
