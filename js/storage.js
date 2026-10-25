@@ -1,4 +1,4 @@
-import { createDefaultNetworks, DEFAULT_NETWORKS } from './station-networks.js';
+import { createDefaultNetworks, DEFAULT_NETWORKS, repairBrokenLogos } from './station-networks.js';
 
 const STORAGE_KEY = 'doley:v1';
 const SCHEMA_VERSION = 3;
@@ -164,6 +164,7 @@ function migrate(data) {
   if (!('loyaltySeeded' in data)) next.loyaltySeeded = false;
   migrateToNetworksAndStations(next);
   seedLoyaltyApps(next);
+  repairBrokenLogos(next.networks);
   next.schemaVersion = SCHEMA_VERSION;
   return next;
 }
