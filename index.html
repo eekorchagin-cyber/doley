@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Долей!">
   <meta name="theme-color" content="#e8eef6">
   <meta name="description" content="Расчёт количества топлива до полного бака">
-  <meta name="doley-version" content="41">
+  <meta name="doley-version" content="42">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
@@ -55,6 +55,74 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
 </head>
 <body>
+  <div id="boot-fail" style="position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:24px;background:#f4f7fb;color:#152033;font:16px/1.4 system-ui,sans-serif;text-align:center">
+    <div style="max-width:320px">
+      <p style="font-size:1.2rem;font-weight:600;margin:0 0 8px">«Долей!» не запустилось</p>
+      <p style="margin:0 0 16px;color:#6b7a90">Скорее всего, на телефоне смешались старые и новые файлы. Ваши заправки и справочники сохранятся.</p>
+      <button type="button" id="boot-fail-reset" style="width:100%;padding:14px;border:0;border-radius:12px;background:#0d9f8f;color:#fff;font:inherit;font-weight:600">Перезапустить начисто</button>
+      <p id="boot-fail-detail" style="margin:12px 0 0;font-size:0.75rem;color:#6b7a90;word-break:break-word"></p>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var APP_FILES = [
+        './index.html', './css/app.css', './js/app.js', './js/updates.js', './js/storage.js',
+        './js/calc.js', './js/cars.js', './js/dictionaries.js', './js/station-networks.js',
+        './js/theme.js', './js/layout.js', './js/loyalty.js', './js/screens/refuel.js',
+        './js/screens/history.js', './js/screens/settings.js', './sw.js', './version.json'
+      ];
+      var BOOT_KEY = 'doley:boot-repair';
+
+      /** Снять сервис-воркер, перекачать файлы мимо HTTP-кэша, очистить кэш и перезагрузить. Данные в localStorage не трогаются. */
+      window.__doleyHardReset = async function (nextVersion) {
+        try {
+          if ('serviceWorker' in navigator) {
+            var regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(function (r) { return r.unregister(); }));
+          }
+        } catch (e) {}
+        try {
+          await Promise.all(APP_FILES.map(function (u) {
+            return fetch(u, { cache: 'reload' }).catch(function () {});
+          }));
+        } catch (e) {}
+        try {
+          if (window.caches) {
+            var keys = await caches.keys();
+            await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          }
+        } catch (e) {}
+        if (nextVersion) localStorage.setItem('doley:app-version', String(nextVersion));
+        sessionStorage.removeItem('doley:update-dismissed');
+        var url = new URL(window.location.href);
+        url.searchParams.set('_', String(Date.now()));
+        window.location.replace(url.toString());
+      };
+
+      var bootError = '';
+      window.addEventListener('error', function (e) {
+        if (window.__doleyBooted) return;
+        bootError = (e && (e.message || (e.target && (e.target.src || e.target.href)))) || 'ошибка загрузки';
+      }, true);
+
+      function bootFailed() {
+        if (window.__doleyBooted) return;
+        if (!sessionStorage.getItem(BOOT_KEY)) {
+          sessionStorage.setItem(BOOT_KEY, '1');
+          window.__doleyHardReset();
+          return;
+        }
+        var panel = document.getElementById('boot-fail');
+        if (!panel) return;
+        document.getElementById('boot-fail-detail').textContent = bootError;
+        document.getElementById('boot-fail-reset').onclick = function () { window.__doleyHardReset(); };
+        panel.style.display = 'flex';
+      }
+
+      setTimeout(function () { if (bootError) bootFailed(); }, 4000);
+      setTimeout(bootFailed, 12000);
+    })();
+  </script>
   <div id="update-banner" class="update-banner" hidden role="status" aria-live="polite">
     <div class="update-banner-inner">
       <p class="update-banner-text" id="update-banner-text">Доступно обновление «Долей!»</p>
@@ -96,7 +164,7 @@
     (function () {
       var VERSION_KEY = 'doley:app-version';
       var DISMISS_KEY = 'doley:update-dismissed';
-      var CURRENT_CACHE = 'doley-static-v41';
+      var CURRENT_CACHE = 'doley-static-v42';
       var remoteVersion = null;
       var remoteCache = null;
       var isStale = false;
@@ -133,31 +201,7 @@
       }
 
       async function forceApply() {
-        var next = remoteVersion != null ? remoteVersion : 41;
-        try {
-          if ('serviceWorker' in navigator) {
-            var regs = await navigator.serviceWorker.getRegistrations();
-            await Promise.all(
-              regs.map(async function (reg) {
-                try {
-                  if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                  if (reg.active) reg.active.postMessage({ type: 'SKIP_WAITING' });
-                } catch (e) {}
-                await reg.unregister();
-              })
-            );
-          }
-          if (window.caches) {
-            var keys = await caches.keys();
-            await Promise.all(keys.map(function (k) { return caches.delete(k); }));
-          }
-        } catch (e) {}
-        localStorage.setItem(VERSION_KEY, String(next));
-        sessionStorage.removeItem(DISMISS_KEY);
-        var url = new URL(window.location.href);
-        url.searchParams.set('v', String(next));
-        url.searchParams.set('_', String(Date.now()));
-        window.location.replace(url.toString());
+        await window.__doleyHardReset(remoteVersion != null ? remoteVersion : 42);
       }
 
       function bindButtons() {

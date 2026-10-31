@@ -70,4 +70,7 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
 });
 
 showScreen('refuel');
+window.__doleyBooted = true;
+sessionStorage.removeItem('doley:boot-repair');
+document.getElementById('boot-fail')?.remove();
 initUpdates();

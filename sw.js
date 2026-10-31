@@ -1,4 +1,4 @@
-const CACHE = 'doley-static-v41';
+const CACHE = 'doley-static-v42';
 const ASSETS = [
   './',
   './index.html',
@@ -23,10 +23,16 @@ const ASSETS = [
   './assets/icon-180.png',
 ];
 
+/** Дольше ждать сеть для страницы нельзя: на iPhone всё это время виден белый экран. */
+const NETWORK_TIMEOUT_MS = 4000;
+
 self.addEventListener('install', (event) => {
+  // cache: 'reload' — мимо HTTP-кэша, иначе в новый кэш попадают старые файлы вперемешку с новыми.
   event.waitUntil(
     caches.open(CACHE).then((cache) =>
-      Promise.all(ASSETS.map((url) => cache.add(url).catch(() => undefined)))
+      Promise.all(
+        ASSETS.map((url) => cache.add(new Request(url, { cache: 'reload' })).catch(() => undefined))
+      )
     )
   );
   // Не вызываем skipWaiting сразу — ждём согласия пользователя в приложении
@@ -67,9 +73,25 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(cacheFirst(request));
 });
 
+function fetchWithTimeout(request, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    fetch(request).then(
+      (r) => {
+        clearTimeout(timer);
+        resolve(r);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      }
+    );
+  });
+}
+
 async function networkFirst(request) {
   try {
-    const response = await fetch(request);
+    const response = await fetchWithTimeout(request, NETWORK_TIMEOUT_MS);
     if (response && response.ok) {
       const cache = await caches.open(CACHE);
       cache.put(request, response.clone());
@@ -85,7 +107,7 @@ async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) {
     // фоновое обновление кэша
-    fetch(request)
+    fetch(request, { cache: 'no-cache' })
       .then((response) => {
         if (response && response.ok) {
           caches.open(CACHE).then((cache) => cache.put(request, response));

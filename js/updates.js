@@ -5,8 +5,8 @@
  * появлялся даже когда старый SW отдаёт устаревший updates.js из кэша.
  */
 
-export const APP_VERSION = 41;
-export const APP_CACHE = 'doley-static-v41';
+export const APP_VERSION = 42;
+export const APP_CACHE = 'doley-static-v42';
 
 const VERSION_KEY = 'doley:app-version';
 const DISMISS_KEY = 'doley:update-dismissed';
@@ -80,6 +80,10 @@ async function unregisterWorkers() {
 
 async function applyUpdate() {
   const next = remoteVersion != null ? remoteVersion : APP_VERSION;
+  if (typeof window.__doleyHardReset === 'function') {
+    await window.__doleyHardReset(next);
+    return;
+  }
   try {
     await unregisterWorkers();
     await clearAppCaches();
