@@ -948,6 +948,10 @@ select {
   gap: 8px;
 }
 
+.btn-row .btn-primary {
+  margin-top: 0;
+}
+
 .file-btn {
   display: inline-flex;
   align-items: center;

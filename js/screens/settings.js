@@ -26,7 +26,7 @@ import {
   listStations,
 } from '../dictionaries.js';
 import { THEME_OPTIONS, normalizeTheme } from '../theme.js';
-import { APP_VERSION } from '../updates.js';
+import { APP_VERSION, applyUpdate, checkUpdateNow } from '../updates.js';
 import { hasLoyalty, loyaltyAppError } from '../loyalty.js';
 
 let root = null;
@@ -135,6 +135,11 @@ function renderMain(data) {
     <section class="settings-block">
       <h3 class="block-title">О приложении</h3>
       <p class="hint">Долей! — расчёт топлива до полного бака. PWA для iPhone. Версия приложения: ${APP_VERSION}. Схема данных: ${data.schemaVersion}</p>
+      <div class="btn-row">
+        <button type="button" class="btn-secondary" id="btn-check-update">Проверить обновление</button>
+        <button type="button" class="btn-primary" id="btn-apply-update" hidden>Обновить</button>
+      </div>
+      <p id="update-msg" class="save-msg" hidden></p>
     </section>
   `;
 }
@@ -314,6 +319,36 @@ function bindMain() {
       a.click();
       URL.revokeObjectURL(a.href);
       flash('backup-msg', 'Файл экспорта создан');
+    });
+  }
+
+  const checkBtn = root.querySelector('#btn-check-update');
+  const applyBtn = root.querySelector('#btn-apply-update');
+  const updateMsg = root.querySelector('#update-msg');
+  if (checkBtn && applyBtn && updateMsg) {
+    const say = (text) => {
+      updateMsg.textContent = text;
+      updateMsg.hidden = false;
+    };
+    checkBtn.addEventListener('click', async () => {
+      checkBtn.disabled = true;
+      applyBtn.hidden = true;
+      say('Проверяю…');
+      const { remote, local } = await checkUpdateNow();
+      checkBtn.disabled = false;
+      if (remote == null) {
+        say('Нет связи с сайтом. Проверьте интернет и попробуйте ещё раз.');
+      } else if (remote > local) {
+        say(`Доступна версия ${remote} (у вас ${local}).`);
+        applyBtn.hidden = false;
+      } else {
+        say(`У вас последняя версия: ${local}.`);
+      }
+    });
+    applyBtn.addEventListener('click', () => {
+      applyBtn.disabled = true;
+      say('Обновляю…');
+      applyUpdate();
     });
   }
 

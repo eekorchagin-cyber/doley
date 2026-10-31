@@ -5,8 +5,8 @@
  * появлялся даже когда старый SW отдаёт устаревший updates.js из кэша.
  */
 
-export const APP_VERSION = 43;
-export const APP_CACHE = 'doley-static-v43';
+export const APP_VERSION = 44;
+export const APP_CACHE = 'doley-static-v44';
 
 const VERSION_KEY = 'doley:app-version';
 const DISMISS_KEY = 'doley:update-dismissed';
@@ -131,6 +131,25 @@ async function fetchRemoteMeta() {
     cache: typeof data.cache === 'string' ? data.cache : APP_CACHE,
   };
 }
+
+/**
+ * Ручная проверка из настроек: сравнивает версию на сайте с версией запущенного кода.
+ * @returns {Promise<{ remote: number|null, local: number }>} remote = null — нет связи.
+ */
+export async function checkUpdateNow() {
+  try {
+    const meta = await fetchRemoteMeta();
+    if (meta) {
+      remoteVersion = meta.version;
+      remoteCache = meta.cache;
+    }
+    return { remote: meta ? meta.version : null, local: APP_VERSION };
+  } catch {
+    return { remote: null, local: APP_VERSION };
+  }
+}
+
+export { applyUpdate };
 
 function storedVersion() {
   const stored = Number(localStorage.getItem(VERSION_KEY));

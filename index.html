@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Долей!">
   <meta name="theme-color" content="#e8eef6">
   <meta name="description" content="Расчёт количества топлива до полного бака">
-  <meta name="doley-version" content="43">
+  <meta name="doley-version" content="44">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
@@ -164,7 +164,7 @@
     (function () {
       var VERSION_KEY = 'doley:app-version';
       var DISMISS_KEY = 'doley:update-dismissed';
-      var CURRENT_CACHE = 'doley-static-v43';
+      var CURRENT_CACHE = 'doley-static-v44';
       var remoteVersion = null;
       var remoteCache = null;
       var isStale = false;
@@ -201,7 +201,7 @@
       }
 
       async function forceApply() {
-        await window.__doleyHardReset(remoteVersion != null ? remoteVersion : 43);
+        await window.__doleyHardReset(remoteVersion != null ? remoteVersion : 44);
       }
 
       function bindButtons() {
