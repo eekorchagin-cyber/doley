@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Долей!">
   <meta name="theme-color" content="#e8eef6">
   <meta name="description" content="Расчёт количества топлива до полного бака">
-  <meta name="doley-version" content="44">
+  <meta name="doley-version" content="45">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
@@ -86,6 +86,8 @@
             return fetch(u, { cache: 'reload' }).catch(function () {});
           }));
         } catch (e) {}
+        // Прежний сервис-воркер ещё управляет страницей и может дописать кэш в фоне — даём ему закончить.
+        await new Promise(function (r) { setTimeout(r, 300); });
         try {
           if (window.caches) {
             var keys = await caches.keys();
@@ -164,7 +166,7 @@
     (function () {
       var VERSION_KEY = 'doley:app-version';
       var DISMISS_KEY = 'doley:update-dismissed';
-      var CURRENT_CACHE = 'doley-static-v44';
+      var CURRENT_CACHE = 'doley-static-v45';
       var remoteVersion = null;
       var remoteCache = null;
       var isStale = false;
@@ -201,7 +203,7 @@
       }
 
       async function forceApply() {
-        await window.__doleyHardReset(remoteVersion != null ? remoteVersion : 44);
+        await window.__doleyHardReset(remoteVersion != null ? remoteVersion : 45);
       }
 
       function bindButtons() {
@@ -248,6 +250,19 @@
           if (!isFinite(remote)) return;
           remoteVersion = remote;
           remoteCache = data.cache || CURRENT_CACHE;
+          // Новый код сам сообщает свою версию — тогда эвристики по кэшам не нужны.
+          var codeV = window.__doleyCodeVersion;
+          if (typeof codeV === 'number') {
+            if (remote > codeV) {
+              bindButtons();
+              showBanner(true);
+            } else {
+              var el = banner();
+              if (el) el.hidden = true;
+              window.__doleyUpdateNeeded = false;
+            }
+            return;
+          }
           var local = Number(localStorage.getItem(VERSION_KEY) || '0');
           var stale = await hasStaleCaches(remoteCache);
           // meta в HTML новее, чем то, что считает localStorage — тоже сигнал

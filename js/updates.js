@@ -5,8 +5,11 @@
  * появлялся даже когда старый SW отдаёт устаревший updates.js из кэша.
  */
 
-export const APP_VERSION = 44;
-export const APP_CACHE = 'doley-static-v44';
+export const APP_VERSION = 45;
+export const APP_CACHE = 'doley-static-v45';
+
+/** Версия реально запущенного кода — по ней inline-проверка в index.html решает, нужен ли баннер. */
+window.__doleyCodeVersion = APP_VERSION;
 
 const VERSION_KEY = 'doley:app-version';
 const DISMISS_KEY = 'doley:update-dismissed';
@@ -110,9 +113,10 @@ function onControllerChange() {
 
 function watchWorker(worker) {
   if (!worker) return;
+  // Новый сервис-воркер сам по себе ещё не значит, что код устарел: решает сравнение версий.
   const maybeShow = () => {
     if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-      showUpdateBanner(true);
+      checkVersionFile();
     }
   };
   worker.addEventListener('statechange', maybeShow);
@@ -151,36 +155,24 @@ export async function checkUpdateNow() {
 
 export { applyUpdate };
 
-function storedVersion() {
-  const stored = Number(localStorage.getItem(VERSION_KEY));
-  return Number.isFinite(stored) && stored > 0 ? stored : 0;
-}
-
-async function hasStaleCaches(currentCache) {
-  if (!window.caches) return false;
-  const keys = await caches.keys();
-  const ours = keys.filter((k) => k.startsWith('doley-static-'));
-  if (!ours.length) return false;
-  return ours.some((k) => k !== currentCache);
-}
-
 async function checkVersionFile() {
   try {
     const meta = await fetchRemoteMeta();
     if (!meta) return;
     remoteVersion = meta.version;
     remoteCache = meta.cache;
-    const local = storedVersion();
-    const stale = await hasStaleCaches(meta.cache);
-    const needs = meta.version > local || stale;
-    if (needs) {
+    // Остатки старых кэшей не в счёт: их может заново создать прежний сервис-воркер,
+    // и тогда баннер «Обновить» появлялся бы снова после каждого обновления.
+    if (meta.version > APP_VERSION) {
       updateIsStale = true;
       showUpdateBanner(true);
       return;
     }
-    if (!localStorage.getItem(VERSION_KEY)) {
-      localStorage.setItem(VERSION_KEY, String(meta.version));
-    }
+    updateIsStale = false;
+    const el = banner();
+    if (el) el.hidden = true;
+    window.__doleyUpdateNeeded = false;
+    localStorage.setItem(VERSION_KEY, String(APP_VERSION));
   } catch {
     // офлайн
   }
@@ -191,7 +183,6 @@ async function checkForUpdates() {
   if (!registration) return;
   try {
     await registration.update();
-    if (registration.waiting) showUpdateBanner(true);
     if (registration.installing) watchWorker(registration.installing);
   } catch {
     // офлайн
@@ -228,7 +219,6 @@ export async function initUpdates() {
     return;
   }
 
-  if (registration.waiting) showUpdateBanner(true);
   if (registration.installing) watchWorker(registration.installing);
 
   registration.addEventListener('updatefound', () => {

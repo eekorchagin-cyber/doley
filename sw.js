@@ -1,4 +1,4 @@
-const CACHE = 'doley-static-v44';
+const CACHE = 'doley-static-v45';
 const ASSETS = [
   './',
   './index.html',
@@ -59,6 +59,8 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  // Принудительная перекачка при «Обновить»: пусть идёт напрямую, не пересоздавая кэш.
+  if (request.cache === 'reload' || request.cache === 'no-store') return;
 
   // HTML и version.json — сначала сеть, чтобы быстрее видеть обновления
   const isNavigate = request.mode === 'navigate' || request.destination === 'document';
