@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Долей!">
   <meta name="theme-color" content="#e8eef6">
   <meta name="description" content="Расчёт количества топлива до полного бака">
-  <meta name="doley-version" content="45">
+  <meta name="doley-version" content="46">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
@@ -68,7 +68,7 @@
       var APP_FILES = [
         './index.html', './css/app.css', './js/app.js', './js/updates.js', './js/storage.js',
         './js/calc.js', './js/cars.js', './js/dictionaries.js', './js/station-networks.js',
-        './js/theme.js', './js/layout.js', './js/loyalty.js', './js/screens/refuel.js',
+        './js/theme.js', './js/layout.js', './js/loyalty.js', './js/dash-ocr.js', './js/screens/refuel.js',
         './js/screens/history.js', './js/screens/settings.js', './sw.js', './version.json'
       ];
       var BOOT_KEY = 'doley:boot-repair';
@@ -166,7 +166,7 @@
     (function () {
       var VERSION_KEY = 'doley:app-version';
       var DISMISS_KEY = 'doley:update-dismissed';
-      var CURRENT_CACHE = 'doley-static-v45';
+      var CURRENT_CACHE = 'doley-static-v46';
       var remoteVersion = null;
       var remoteCache = null;
       var isStale = false;
@@ -203,7 +203,7 @@
       }
 
       async function forceApply() {
-        await window.__doleyHardReset(remoteVersion != null ? remoteVersion : 45);
+        await window.__doleyHardReset(remoteVersion != null ? remoteVersion : 46);
       }
 
       function bindButtons() {

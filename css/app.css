@@ -363,10 +363,19 @@ select {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
   font-size: 0.72rem;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* У полей чисел своя минимальная ширина — без этого колонка вылезает за край экрана. */
+.field > input,
+.field > select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .field-head {
@@ -393,6 +402,62 @@ select {
 
 .loyalty-btn[hidden] {
   display: none !important;
+}
+
+.field-head label {
+  cursor: pointer;
+}
+
+.chip-btn {
+  margin: -4px 0;
+  padding: 1px 8px;
+  border: 1px solid rgba(13, 159, 143, 0.45);
+  border-radius: 999px;
+  background: var(--accent-dim);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.chip-btn[hidden] {
+  display: none !important;
+}
+
+.chip-btn:active {
+  transform: scale(0.95);
+}
+
+.scan-preview {
+  display: block;
+  width: 100%;
+  max-height: 28dvh;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #000;
+  margin: 4px 0 8px;
+}
+
+.scan-status {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.scan-status.is-error {
+  color: var(--danger);
+}
+
+.scan-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.scan-fields .field input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .loyalty-btn:active {

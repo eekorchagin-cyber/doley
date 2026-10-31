@@ -5,8 +5,8 @@
  * появлялся даже когда старый SW отдаёт устаревший updates.js из кэша.
  */
 
-export const APP_VERSION = 45;
-export const APP_CACHE = 'doley-static-v45';
+export const APP_VERSION = 46;
+export const APP_CACHE = 'doley-static-v46';
 
 /** Версия реально запущенного кода — по ней inline-проверка в index.html решает, нужен ли баннер. */
 window.__doleyCodeVersion = APP_VERSION;

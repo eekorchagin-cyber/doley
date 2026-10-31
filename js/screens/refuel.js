@@ -10,6 +10,7 @@ import { addFillup, listFuels, listNetworks } from '../dictionaries.js';
 import { listCars, setActiveCar } from '../cars.js';
 import { syncLayout } from '../layout.js';
 import { hasLoyalty, loyaltyAppHref, openLoyaltyApp } from '../loyalty.js';
+import { readDashboard } from '../dash-ocr.js';
 
 let root = null;
 let getData = null;
@@ -138,6 +139,114 @@ function openLoyalty() {
     closeLoyaltySheet();
     openLoyaltyApp(network.loyaltyApp);
   });
+}
+
+function closeScanSheet() {
+  const el = document.getElementById('scan-sheet');
+  if (!el) return;
+  if (el.dataset.preview) URL.revokeObjectURL(el.dataset.preview);
+  el.remove();
+}
+
+/** Фото панели → найденные значения в окне для проверки → «Подставить» заполняет форму. */
+async function scanDashboard(file) {
+  closeScanSheet();
+  const data = getData();
+  const car = getActiveCar(data);
+  const prevOdo = data.fillups
+    .filter((f) => f.carId === car.id)
+    .reduce((max, f) => Math.max(max, Number(f.odometer) || 0), 0);
+
+  const preview = URL.createObjectURL(file);
+  const modal = document.createElement('div');
+  modal.id = 'scan-sheet';
+  modal.className = 'modal';
+  modal.dataset.preview = preview;
+  modal.innerHTML = `
+    <div class="modal-card scan-sheet">
+      <h3>Показания с панели</h3>
+      <img class="scan-preview" src="${preview}" alt="Фото приборной панели">
+      <p class="scan-status" id="scan-status">Готовлю распознавание…</p>
+      <div id="scan-result"></div>
+      <div class="modal-actions modal-actions-single" id="scan-actions">
+        <button type="button" class="btn-secondary" id="scan-cancel">Отмена</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  let cancelled = false;
+  const close = () => {
+    cancelled = true;
+    closeScanSheet();
+  };
+  modal.onclick = (e) => {
+    if (e.target === modal) close();
+  };
+  modal.querySelector('#scan-cancel').onclick = close;
+  const status = modal.querySelector('#scan-status');
+
+  let res;
+  try {
+    res = await readDashboard(file, {
+      prevOdo,
+      onStatus: (s) => {
+        status.textContent = s;
+      },
+    });
+  } catch (err) {
+    if (cancelled) return;
+    status.textContent = err?.message || 'Не удалось распознать фото.';
+    status.classList.add('is-error');
+    return;
+  }
+  if (cancelled) return;
+
+  const found = [res.odometer, res.rangeKm, res.consumption].some((v) => v != null);
+  if (!found) {
+    status.textContent =
+      'Цифры не найдены. Снимите панель ближе и прямо, чтобы нижняя строка с пробегом была хорошо видна.';
+    status.classList.add('is-error');
+    modal.querySelector('#scan-cancel').textContent = 'Закрыть';
+    return;
+  }
+
+  status.textContent = 'Проверьте значения — при необходимости исправьте.';
+  const val = (v) => (v == null ? '' : String(v));
+  modal.querySelector('#scan-result').innerHTML = `
+    <div class="scan-fields">
+      <label class="field"><span>Одометр, км</span><input id="scan-odo" inputmode="numeric" type="number" step="1" min="0" value="${val(
+        res.odometer
+      )}" placeholder="—"></label>
+      <label class="field"><span>До пустого, км</span><input id="scan-range" inputmode="numeric" type="number" step="1" min="0" value="${val(
+        res.rangeKm
+      )}" placeholder="—"></label>
+      <label class="field"><span>Расход, л/100</span><input id="scan-cons" inputmode="decimal" type="number" step="0.1" min="0" value="${val(
+        res.consumption
+      )}" placeholder="—"></label>
+    </div>
+  `;
+  const actions = modal.querySelector('#scan-actions');
+  actions.classList.remove('modal-actions-single');
+  actions.insertAdjacentHTML(
+    'beforeend',
+    '<button type="button" class="btn-primary" id="scan-apply">Подставить</button>'
+  );
+  modal.querySelector('#scan-apply').onclick = () => {
+    for (const [from, to] of [
+      ['#scan-odo', '#odo'],
+      ['#scan-range', '#range'],
+      ['#scan-cons', '#cons'],
+    ]) {
+      const v = modal.querySelector(from).value.trim();
+      const input = root.querySelector(to);
+      if (v !== '' && input) {
+        input.value = v;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+    closeScanSheet();
+  };
 }
 
 function refillStations(preferredId) {
@@ -356,12 +465,17 @@ function render() {
 
     <form id="refuel-form" class="dash-form" autocomplete="off">
       <div class="field-row field-row-odo-date">
-        <label class="field">
-          <span>Одометр, км</span>
+        <div class="field">
+          <div class="field-head">
+            <label for="odo">Одометр, км</label>
+            <button type="button" class="chip-btn" id="btn-scan" aria-label="Заполнить по фото приборной панели" ${
+              awaitingNew ? 'hidden' : ''
+            }>📷</button>
+          </div>
           <input id="odo" inputmode="numeric" type="number" step="1" min="0" value="${escapeAttr(
             defaults.odometer
           )}" required>
-        </label>
+        </div>
         <label class="field">
           <span>Дата</span>
           <div class="date-wrap">
@@ -491,6 +605,7 @@ function render() {
 
       <div class="form-spacer" aria-hidden="true"></div>
     </form>
+    <input type="file" id="scan-file" accept="image/*" hidden>
   `;
 
   renderDock();
@@ -513,6 +628,14 @@ function render() {
   dateInput?.addEventListener('input', syncDateDisplay);
   dateInput?.addEventListener('change', syncDateDisplay);
   root.querySelector('#btn-loyalty')?.addEventListener('click', openLoyalty);
+
+  const scanFile = root.querySelector('#scan-file');
+  root.querySelector('#btn-scan')?.addEventListener('click', () => scanFile?.click());
+  scanFile?.addEventListener('change', () => {
+    const file = scanFile.files?.[0];
+    scanFile.value = '';
+    if (file) scanDashboard(file);
+  });
 
   root.querySelector('#network')?.addEventListener('change', () => {
     refillStations();
