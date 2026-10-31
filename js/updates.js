@@ -5,8 +5,8 @@
  * появлялся даже когда старый SW отдаёт устаревший updates.js из кэша.
  */
 
-export const APP_VERSION = 42;
-export const APP_CACHE = 'doley-static-v42';
+export const APP_VERSION = 43;
+export const APP_CACHE = 'doley-static-v43';
 
 const VERSION_KEY = 'doley:app-version';
 const DISMISS_KEY = 'doley:update-dismissed';

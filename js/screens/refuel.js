@@ -429,13 +429,6 @@ function render() {
           <span>Неполный бак</span>
         </label>
       </div>
-      <p id="fill-mode-hint" class="cost-hint">
-        ${
-          defaults.fullTank
-            ? 'Расход л/100 считается между заправками до полного бака; частичные литры между ними учитываются.'
-            : 'Частичная заправка учитывается в сумме литров до следующей полной.'
-        }
-      </p>
 
       <div class="field-row">
         <label class="field">
@@ -529,13 +522,6 @@ function render() {
 
   root.querySelectorAll('input[name="fill-mode"]').forEach((el) => {
     el.addEventListener('change', () => {
-      const hint = root.querySelector('#fill-mode-hint');
-      const full = root.querySelector('#fill-mode-full')?.checked;
-      if (hint) {
-        hint.textContent = full
-          ? 'Расход л/100 считается между заправками до полного бака; частичные литры между ними учитываются.'
-          : 'Частичная заправка учитывается в сумме литров до следующей полной.';
-      }
       recalc();
       persistInputs();
     });
